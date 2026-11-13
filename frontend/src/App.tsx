@@ -1219,8 +1219,8 @@ export function App() {
 
       {/* MAIN PORTAL SHELL */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        {/* TOP HEADER: STRICT ROLE IDENTITY + MULTI-JOB SELECTOR + EMAIL OUTBOX + USER PROFILE & LOGOUT */}
-        <header className="flex h-16 shrink-0 items-center justify-between border-b border-slate-200/90 bg-white/95 px-6 shadow-xs backdrop-blur-md">
+        {/* TOP HEADER: STRICT ROLE IDENTITY + EMAIL OUTBOX + USER PROFILE */}
+        <header className="relative z-40 flex h-16 shrink-0 items-center justify-between border-b border-slate-200/90 bg-white px-6 shadow-xs">
           <div className="flex items-center gap-3">
             <span
               className={cn(
@@ -1239,24 +1239,6 @@ export function App() {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Multi-Job Selector for Internal Roles */}
-            {currentUser.role !== 'CANDIDATE' && (
-              <div className="hidden items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs lg:flex">
-                <span className="font-semibold text-slate-500">Chiến dịch Job:</span>
-                <select
-                  value={selectedJob.id}
-                  onChange={(e) => setSelectedJobId(Number(e.target.value))}
-                  className="bg-transparent font-bold text-slate-900 focus:outline-none"
-                >
-                  {store.jobs.map((j) => (
-                    <option key={j.id} value={j.id}>
-                      #{j.id} {j.title} ({j.filledCount}/{j.headcount})
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
-
             {/* System Email Outbox Button */}
             <button
               type="button"
@@ -1638,7 +1620,23 @@ export function App() {
                   {/* Search, Multi-Filter & S3.22 Race Condition Bar */}
                   <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
                     <div className="flex flex-wrap items-center gap-2">
-                      <div className="relative w-60">
+                      {/* Job Campaign Selector in Kanban Toolbar */}
+                      <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs">
+                        <span className="font-semibold text-slate-500">Chiến dịch:</span>
+                        <select
+                          value={selectedJob.id}
+                          onChange={(e) => setSelectedJobId(Number(e.target.value))}
+                          className="bg-transparent font-bold text-slate-900 focus:outline-none"
+                        >
+                          {store.jobs.map((j) => (
+                            <option key={j.id} value={j.id}>
+                              #{j.id} {j.title} ({j.filledCount}/{j.headcount})
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+
+                      <div className="relative w-56">
                         <Search className="absolute top-2.5 left-3 h-3.5 w-3.5 text-slate-400" />
                         <input
                           type="text"

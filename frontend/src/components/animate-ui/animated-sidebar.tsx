@@ -149,9 +149,24 @@ export const AnimatedSidebar: React.FC<AnimatedSidebarProps> = ({
         {/* Subtle top ambient glow */}
         <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-slate-100/70 to-transparent" />
 
+        {/* Floating Sidebar Toggle Button (Floating on the border edge to never overlap the logo) */}
+        <button
+          type="button"
+          onClick={onToggleCollapsed}
+          aria-label={collapsed ? 'Mở rộng Sidebar' : 'Thu gọn Sidebar'}
+          className="absolute -right-3 top-5 z-40 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-xs transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 active:scale-95"
+        >
+          {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
+        </button>
+
         {/* Portal Brand Header */}
-        <div className="relative flex h-16 items-center justify-between border-b border-slate-200/80 px-4 bg-white/95 backdrop-blur-md">
-          <div className="flex items-center gap-3 overflow-hidden">
+        <div
+          className={cn(
+            'relative flex h-16 items-center border-b border-slate-200/80 bg-white/95 backdrop-blur-md transition-all',
+            collapsed ? 'justify-center px-0' : 'justify-between px-4',
+          )}
+        >
+          <div className={cn('flex items-center gap-3 overflow-hidden', collapsed && 'justify-center')}>
             <div
               className={cn(
                 'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white shadow-md',
@@ -175,15 +190,6 @@ export const AnimatedSidebar: React.FC<AnimatedSidebarProps> = ({
               )}
             </AnimatePresence>
           </div>
-
-          <button
-            type="button"
-            onClick={onToggleCollapsed}
-            aria-label={collapsed ? 'Mở rộng Sidebar' : 'Thu gọn Sidebar'}
-            className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-500 transition-colors hover:border-slate-300 hover:bg-slate-100 hover:text-slate-900"
-          >
-            {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-          </button>
         </div>
 
         {/* Role Section Label */}

@@ -299,7 +299,7 @@ export const UserProfileMenu: React.FC<UserProfileMenuProps> = ({
   };
 
   return (
-    <div className="relative inline-flex items-center gap-2" ref={menuRef}>
+    <div className="relative z-50 inline-flex items-center" ref={menuRef}>
       {/* 1. USER PROFILE TRIGGER BUTTON */}
       <button
         type="button"
@@ -356,18 +356,7 @@ export const UserProfileMenu: React.FC<UserProfileMenuProps> = ({
         />
       </button>
 
-      {/* 2. DEDICATED QUICK LOGOUT BUTTON */}
-      <button
-        type="button"
-        onClick={onLogout}
-        title="Đăng xuất an toàn khỏi phiên làm việc"
-        className="inline-flex cursor-pointer items-center gap-1.5 whitespace-nowrap rounded-xl border border-red-200/90 bg-red-50/80 px-3 py-1.5 text-xs font-bold text-red-700 shadow-2xs transition-all duration-150 hover:border-red-300 hover:bg-red-100 hover:text-red-800 hover:shadow-xs active:scale-98"
-      >
-        <LogOut className="h-3.5 w-3.5 shrink-0" />
-        <span className="whitespace-nowrap">Đăng xuất</span>
-      </button>
-
-      {/* 3. MODERN DROPDOWN POPOVER */}
+      {/* 2. MODERN DROPDOWN POPOVER (HIGHEST PRIORITY Z-INDEX) */}
       <AnimatePresence>
         {dropdownOpen && (
           <motion.div
@@ -375,10 +364,10 @@ export const UserProfileMenu: React.FC<UserProfileMenuProps> = ({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 4, scale: 0.96 }}
             transition={{ duration: 0.14, ease: 'easeOut' }}
-            className="absolute top-full right-0 z-50 mt-2 w-80 origin-top-right rounded-2xl border border-slate-200 bg-white p-2 shadow-xl shadow-slate-900/10 backdrop-blur-md"
+            className="absolute top-full right-0 z-[9999] mt-2 w-80 origin-top-right rounded-2xl border border-slate-200/90 bg-white p-2.5 shadow-2xl shadow-slate-900/25 ring-1 ring-slate-900/5"
           >
             {/* Header: User Overview Card */}
-            <div className="rounded-xl border border-slate-100 bg-gradient-to-br from-slate-50 via-slate-50/80 to-blue-50/40 p-3">
+            <div className="rounded-xl border border-slate-200/80 bg-slate-50 p-3">
               <div className="flex items-start gap-3">
                 <div
                   className={cn(

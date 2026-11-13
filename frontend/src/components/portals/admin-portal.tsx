@@ -630,7 +630,7 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
         <div className="space-y-5">
           {/* Hero Command Banner */}
           <div className="relative overflow-hidden rounded-2xl border border-amber-200/90 bg-gradient-to-r from-amber-500/15 via-amber-50/60 to-white p-6 text-slate-900 shadow-xs">
-            <div className="flex flex-wrap items-center justify-between gap-4">
+            <div className="flex flex-col gap-3.5">
               <div>
                 <span className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-100 px-2.5 py-1 font-mono text-[10px] font-bold text-amber-900 uppercase">
                   <ShieldCheck className="h-3.5 w-3.5 text-amber-700" />
@@ -646,7 +646,7 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                 </p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2.5">
+              <div className="flex flex-wrap items-center gap-2.5 pt-1">
                 <button
                   type="button"
                   onClick={() => onSelectSection('admin-users')}
