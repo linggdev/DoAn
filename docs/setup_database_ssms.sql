@@ -249,3 +249,4 @@ INSERT INTO applications (id, job_id, candidate_id, current_stage_id, resume_url
 SET IDENTITY_INSERT applications OFF;
 
 PRINT N'>>> ĐÃ TẠO TOÀN BỘ 13 BẢNG VÀ CHÈN DỮ LIỆU MẪU THÀNH CÔNG VÀO DATABASE ATS_Enterprise_DB <<<';
+

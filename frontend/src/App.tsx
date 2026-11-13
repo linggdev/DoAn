@@ -838,36 +838,36 @@ export function App() {
   // ============================================================================
   if (!currentUser) {
     return (
-      <div className="flex min-h-screen w-full flex-col bg-slate-950 lg:flex-row">
+      <div className="flex min-h-screen w-full flex-col bg-slate-100 lg:flex-row">
         {/* LEFT SHOWCASE: SYSTEM ARCHITECTURE & DIRECTORY OF ACCOUNTS */}
-        <div className="relative flex flex-1 flex-col justify-between overflow-hidden border-b border-slate-800/80 p-8 text-white lg:border-r lg:border-b-0 lg:p-12">
-          <div className="pointer-events-none absolute -top-24 -left-24 h-96 w-96 rounded-full bg-blue-600/20 blur-3xl" />
-          <div className="pointer-events-none absolute right-0 bottom-0 h-96 w-96 rounded-full bg-indigo-600/20 blur-3xl" />
+        <div className="relative flex flex-1 flex-col justify-between overflow-hidden border-b border-slate-200/90 bg-gradient-to-br from-slate-50 via-blue-50/40 to-indigo-50/50 p-8 text-slate-800 lg:border-r lg:border-b-0 lg:p-12">
+          <div className="pointer-events-none absolute -top-24 -left-24 h-96 w-96 rounded-full bg-blue-400/15 blur-3xl" />
+          <div className="pointer-events-none absolute right-0 bottom-0 h-96 w-96 rounded-full bg-indigo-400/15 blur-3xl" />
 
           <div className="relative z-10">
-            <div className="inline-flex items-center gap-2.5 rounded-2xl border border-blue-500/30 bg-blue-500/10 px-3.5 py-1.5 text-xs font-bold text-blue-300">
-              <Sparkles className="h-4 w-4 text-blue-400" />
+            <div className="inline-flex items-center gap-2.5 rounded-2xl border border-blue-300 bg-blue-50 px-3.5 py-1.5 text-xs font-bold text-blue-700 shadow-2xs">
+              <Sparkles className="h-4 w-4 text-blue-600" />
               INTERNAL ENTERPRISE ATS & SCORECARD PLATFORM
             </div>
-            <h1 className="mt-5 text-3xl font-extrabold tracking-tight text-white sm:text-4xl">
+            <h1 className="mt-5 text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
               Hệ thống Quản trị Tuyển dụng &{' '}
-              <span className="bg-gradient-to-r from-blue-400 via-indigo-300 to-emerald-300 bg-clip-text text-transparent">
+              <span className="bg-gradient-to-r from-blue-600 via-indigo-600 to-emerald-600 bg-clip-text text-transparent">
                 Đánh giá Ứng viên Đa tiêu chí
               </span>
             </h1>
-            <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-300">
+            <p className="mt-3 max-w-xl text-sm leading-relaxed text-slate-600">
               Phân quyền <strong>Strict 5-Role RBAC</strong>: Mỗi tài khoản được gán đúng 1 vai trò
               duy nhất và cố định ở giao diện Portal của vai trò đó sau khi đăng nhập. Toàn bộ dữ
               liệu được lưu trữ bền vững qua các phiên làm việc.
             </p>
 
             {/* Danh sách tài khoản mẫu để người dùng tra cứu Email khi đăng nhập */}
-            <div className="mt-7 rounded-2xl border border-slate-800/90 bg-slate-900/75 p-4 backdrop-blur-md">
-              <div className="flex items-center justify-between border-b border-slate-800 pb-2.5">
-                <span className="font-mono text-[11px] font-bold tracking-wider text-slate-300 uppercase">
+            <div className="mt-7 rounded-2xl border border-slate-200/90 bg-white/95 p-4 shadow-sm backdrop-blur-md">
+              <div className="flex items-center justify-between border-b border-slate-100 pb-2.5">
+                <span className="font-mono text-[11px] font-bold tracking-wider text-slate-700 uppercase">
                   📋 Danh bạ Tài khoản Hệ thống (Mật khẩu mặc định: Password@123)
                 </span>
-                <span className="text-[11px] text-slate-400">
+                <span className="text-[11px] text-slate-500">
                   Bấm "Điền Email" rồi nhấn nút Đăng nhập bên phải
                 </span>
               </div>
@@ -878,7 +878,7 @@ export function App() {
                   return (
                     <div
                       key={u.id}
-                      className="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950/70 px-3 py-2.5 text-xs"
+                      className="flex items-center justify-between rounded-xl border border-slate-200 bg-slate-50/80 px-3 py-2.5 text-xs transition-colors hover:border-slate-300 hover:bg-slate-50"
                     >
                       <div className="min-w-0 pr-2">
                         <div className="flex items-center gap-1.5">
@@ -891,13 +891,13 @@ export function App() {
                             [{u.role}]
                           </span>
                           {u.status === 'INACTIVE' && (
-                            <span className="rounded bg-red-500/20 px-1.5 py-0.2 text-[9px] font-bold text-red-400">
+                            <span className="rounded bg-red-100 px-1.5 py-0.2 text-[9px] font-bold text-red-600">
                               INACTIVE
                             </span>
                           )}
                         </div>
-                        <p className="truncate font-bold text-white">{u.fullName}</p>
-                        <p className="truncate font-mono text-[11px] text-slate-400">{u.email}</p>
+                        <p className="truncate font-bold text-slate-900">{u.fullName}</p>
+                        <p className="truncate font-mono text-[11px] text-slate-500">{u.email}</p>
                       </div>
 
                       <button
@@ -908,7 +908,7 @@ export function App() {
                           setLoginPassword('Password@123');
                           setAuthError(null);
                         }}
-                        className="shrink-0 cursor-pointer rounded-lg border border-slate-700 bg-slate-800 px-2.5 py-1.5 text-[11px] font-semibold text-slate-200 hover:border-blue-500 hover:bg-blue-600 hover:text-white"
+                        className="shrink-0 cursor-pointer rounded-lg border border-slate-200 bg-white px-2.5 py-1.5 text-[11px] font-semibold text-slate-700 shadow-2xs hover:border-blue-500 hover:bg-blue-50 hover:text-blue-700"
                       >
                         Điền Email
                       </button>
@@ -919,7 +919,7 @@ export function App() {
             </div>
           </div>
 
-          <div className="relative z-10 mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-slate-800/80 pt-5 text-xs text-slate-400">
+          <div className="relative z-10 mt-8 flex flex-wrap items-center justify-between gap-4 border-t border-slate-200 pt-5 text-xs text-slate-500">
             <span>GitHub Spec Kit V2 · Persistent Local Store</span>
             <span className="font-mono">Strict RBAC Boundary (No Role Switcher)</span>
           </div>
@@ -1166,13 +1166,12 @@ export function App() {
         onSelectSection={setActiveSection}
         collapsed={sidebarCollapsed}
         onToggleCollapsed={() => setSidebarCollapsed((v) => !v)}
-        onLogout={handleLogout}
       />
 
       {/* MAIN PORTAL SHELL */}
       <div className="flex flex-1 flex-col overflow-hidden">
-        {/* TOP HEADER: STRICT ROLE IDENTITY + MULTI-JOB SELECTOR + EMAIL OUTBOX + LOGOUT */}
-        <header className="flex h-16 shrink-0 items-center justify-between border-b border-slate-200/80 bg-white/90 px-6 backdrop-blur-xl">
+        {/* TOP HEADER: STRICT ROLE IDENTITY + MULTI-JOB SELECTOR + EMAIL OUTBOX + USER PROFILE & LOGOUT */}
+        <header className="flex h-16 shrink-0 items-center justify-between border-b border-slate-200/90 bg-white/95 px-6 shadow-xs backdrop-blur-md">
           <div className="flex items-center gap-3">
             <span
               className={cn(
@@ -1184,19 +1183,16 @@ export function App() {
             </span>
             <div>
               <h1 className="text-sm font-extrabold tracking-tight text-slate-900">
-                {currentMeta.portalTitle} — {currentUser.fullName}
+                {currentMeta.portalTitle}
               </h1>
-              <p className="text-[11px] text-slate-500">
-                Email: <code className="font-mono text-slate-700">{currentUser.email}</code> · Phòng
-                ban: <strong className="text-slate-700">{currentUser.department}</strong>
-              </p>
+              <p className="text-[11px] text-slate-500">{currentMeta.portalSubtitle}</p>
             </div>
           </div>
 
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-3">
             {/* Multi-Job Selector for Internal Roles */}
             {currentUser.role !== 'CANDIDATE' && (
-              <div className="hidden items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs md:flex">
+              <div className="hidden items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs lg:flex">
                 <span className="font-semibold text-slate-500">Chiến dịch Job:</span>
                 <select
                   value={selectedJob.id}
@@ -1225,14 +1221,36 @@ export function App() {
               </span>
             </button>
 
-            <button
-              type="button"
-              onClick={handleLogout}
-              className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-red-200 bg-red-50/70 px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-100"
-            >
-              <LogOut className="h-3.5 w-3.5" />
-              <span>Đăng xuất</span>
-            </button>
+            {/* TOP-RIGHT USER IDENTITY & LOGOUT SECTION */}
+            <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-1.5 shadow-2xs">
+              <div className="flex items-center gap-2.5 pl-1.5">
+                <div
+                  className={cn(
+                    'flex h-8 w-8 shrink-0 items-center justify-center rounded-xl font-mono text-xs font-bold text-white shadow-xs',
+                    currentMeta.iconBgClass,
+                  )}
+                >
+                  {currentUser.fullName.slice(0, 2).toUpperCase()}
+                </div>
+                <div className="hidden text-left sm:block">
+                  <p className="truncate text-xs font-bold text-slate-900">{currentUser.fullName}</p>
+                  <p className="truncate text-[10px] text-slate-500">
+                    {currentUser.department ? `${currentUser.department} · ` : ''}
+                    {currentUser.email}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="flex cursor-pointer items-center gap-1.5 rounded-xl border border-red-200 bg-red-50/90 px-3 py-1.5 text-xs font-bold text-red-700 shadow-2xs transition-colors hover:border-red-300 hover:bg-red-100 hover:text-red-800"
+                title="Đăng xuất / Đổi tài khoản"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+                <span className="hidden md:inline">Đăng xuất / Đổi tài khoản</span>
+              </button>
+            </div>
           </div>
         </header>
 

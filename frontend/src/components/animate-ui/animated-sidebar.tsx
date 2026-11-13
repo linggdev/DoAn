@@ -13,7 +13,6 @@ import {
   FileCheck2,
   FileSearch,
   Kanban,
-  LogOut,
   Scale,
   ShieldCheck,
   Sliders,
@@ -48,9 +47,9 @@ export const ROLE_META: Record<
     portalTitle: 'Admin Command',
     portalSubtitle: 'System & RBAC Governance',
     roleBadge: 'SYSTEM ADMIN',
-    activePillClass: 'bg-gradient-to-r from-amber-500 to-orange-600 shadow-amber-500/25',
-    iconBgClass: 'bg-gradient-to-br from-amber-500 to-orange-600 shadow-amber-500/30',
-    badgeTextClass: 'text-amber-400',
+    activePillClass: 'bg-gradient-to-r from-amber-500 to-orange-500 shadow-amber-500/25',
+    iconBgClass: 'bg-gradient-to-br from-amber-500 to-orange-500 shadow-amber-500/30',
+    badgeTextClass: 'text-amber-700',
   },
   HIRING_MANAGER: {
     portalTitle: 'Hiring Manager',
@@ -58,7 +57,7 @@ export const ROLE_META: Record<
     roleBadge: 'HIRING MANAGER',
     activePillClass: 'bg-gradient-to-r from-emerald-600 to-teal-600 shadow-emerald-600/25',
     iconBgClass: 'bg-gradient-to-br from-emerald-500 to-teal-600 shadow-emerald-500/30',
-    badgeTextClass: 'text-emerald-400',
+    badgeTextClass: 'text-emerald-700',
   },
   HR: {
     portalTitle: 'HR Operations Hub',
@@ -66,7 +65,7 @@ export const ROLE_META: Record<
     roleBadge: 'HR RECRUITER',
     activePillClass: 'bg-gradient-to-r from-blue-600 to-indigo-600 shadow-blue-600/25',
     iconBgClass: 'bg-gradient-to-br from-blue-600 to-indigo-600 shadow-blue-600/30',
-    badgeTextClass: 'text-blue-400',
+    badgeTextClass: 'text-blue-700',
   },
   INTERVIEWER: {
     portalTitle: 'Evaluation Studio',
@@ -74,7 +73,7 @@ export const ROLE_META: Record<
     roleBadge: 'INTERVIEWER',
     activePillClass: 'bg-gradient-to-r from-violet-600 to-purple-600 shadow-violet-600/25',
     iconBgClass: 'bg-gradient-to-br from-violet-600 to-purple-600 shadow-violet-600/30',
-    badgeTextClass: 'text-violet-400',
+    badgeTextClass: 'text-violet-700',
   },
   CANDIDATE: {
     portalTitle: 'Candidate Portal',
@@ -82,7 +81,7 @@ export const ROLE_META: Record<
     roleBadge: 'CANDIDATE',
     activePillClass: 'bg-gradient-to-r from-sky-500 to-cyan-600 shadow-sky-500/25',
     iconBgClass: 'bg-gradient-to-br from-sky-500 to-cyan-600 shadow-sky-500/30',
-    badgeTextClass: 'text-sky-400',
+    badgeTextClass: 'text-sky-700',
   },
 };
 
@@ -127,19 +126,14 @@ interface AnimatedSidebarProps {
   onSelectSection: (id: string) => void;
   collapsed: boolean;
   onToggleCollapsed: () => void;
-  onLogout: () => void;
 }
 
 export const AnimatedSidebar: React.FC<AnimatedSidebarProps> = ({
   role,
-  userName,
-  userEmail,
-  departmentName,
   activeSection,
   onSelectSection,
   collapsed,
   onToggleCollapsed,
-  onLogout,
 }) => {
   const meta = ROLE_META[role];
   const navItems = ROLE_NAV_CONFIG[role];
@@ -150,17 +144,17 @@ export const AnimatedSidebar: React.FC<AnimatedSidebarProps> = ({
         initial={false}
         animate={{ width: collapsed ? 78 : 276 }}
         transition={{ type: 'spring', stiffness: 320, damping: 30, mass: 0.85 }}
-        className="relative flex h-screen shrink-0 flex-col border-r border-slate-800/80 bg-slate-950 text-slate-100 select-none"
+        className="relative flex h-screen shrink-0 flex-col border-r border-slate-200/90 bg-white text-slate-800 shadow-xs select-none"
       >
         {/* Subtle top ambient glow */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-blue-600/10 to-transparent" />
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-slate-100/70 to-transparent" />
 
         {/* Portal Brand Header */}
-        <div className="relative flex h-16 items-center justify-between border-b border-slate-800/80 px-4">
+        <div className="relative flex h-16 items-center justify-between border-b border-slate-200/80 px-4 bg-white/95 backdrop-blur-md">
           <div className="flex items-center gap-3 overflow-hidden">
             <div
               className={cn(
-                'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white shadow-lg',
+                'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-white shadow-md',
                 meta.iconBgClass,
               )}
             >
@@ -175,8 +169,8 @@ export const AnimatedSidebar: React.FC<AnimatedSidebarProps> = ({
                   transition={{ duration: 0.15 }}
                   className="whitespace-nowrap"
                 >
-                  <p className="text-sm font-bold tracking-tight text-white">{meta.portalTitle}</p>
-                  <p className="text-[11px] font-medium text-slate-400">{meta.portalSubtitle}</p>
+                  <p className="text-sm font-extrabold tracking-tight text-slate-900">{meta.portalTitle}</p>
+                  <p className="text-[11px] font-medium text-slate-500">{meta.portalSubtitle}</p>
                 </motion.div>
               )}
             </AnimatePresence>
@@ -186,7 +180,7 @@ export const AnimatedSidebar: React.FC<AnimatedSidebarProps> = ({
             type="button"
             onClick={onToggleCollapsed}
             aria-label={collapsed ? 'Mở rộng Sidebar' : 'Thu gọn Sidebar'}
-            className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-slate-800 bg-slate-900 text-slate-400 transition-colors hover:border-slate-700 hover:bg-slate-800 hover:text-white"
+            className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-lg border border-slate-200 bg-slate-50 text-slate-500 transition-colors hover:border-slate-300 hover:bg-slate-100 hover:text-slate-900"
           >
             {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
           </button>
@@ -202,7 +196,7 @@ export const AnimatedSidebar: React.FC<AnimatedSidebarProps> = ({
         )}
 
         {/* Role-Dedicated Navigation */}
-        <nav className="flex-1 space-y-1.5 px-3 py-3">
+        <nav className="flex-1 space-y-1.5 px-3 py-3 overflow-y-auto">
           {navItems.map((item) => {
             const Icon = item.icon;
             const isActive = activeSection === item.id;
@@ -216,20 +210,20 @@ export const AnimatedSidebar: React.FC<AnimatedSidebarProps> = ({
                   'group relative flex w-full cursor-pointer items-center gap-3 rounded-xl px-3 py-2.5 text-left text-xs font-semibold transition-colors',
                   isActive
                     ? 'text-white'
-                    : 'text-slate-400 hover:bg-slate-900/90 hover:text-slate-100',
+                    : 'text-slate-600 hover:bg-slate-100/90 hover:text-slate-900',
                 )}
               >
                 {isActive && (
                   <motion.div
                     layoutId="sidebar-active-pill"
                     transition={{ type: 'spring', stiffness: 360, damping: 30 }}
-                    className={cn('absolute inset-0 rounded-xl shadow-lg', meta.activePillClass)}
+                    className={cn('absolute inset-0 rounded-xl shadow-md', meta.activePillClass)}
                   />
                 )}
                 <Icon
                   className={cn(
                     'relative z-10 h-4.5 w-4.5 shrink-0 transition-transform duration-150 group-hover:scale-105',
-                    isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-200',
+                    isActive ? 'text-white' : 'text-slate-400 group-hover:text-slate-700',
                   )}
                 />
                 <AnimatePresence initial={false}>
@@ -248,7 +242,7 @@ export const AnimatedSidebar: React.FC<AnimatedSidebarProps> = ({
                             'ml-2 rounded-md px-1.5 py-0.5 font-mono text-[10px] font-bold',
                             isActive
                               ? 'bg-white/20 text-white'
-                              : 'bg-slate-900 text-slate-400 ring-1 ring-slate-800',
+                              : 'bg-slate-100 text-slate-600 ring-1 ring-slate-200',
                           )}
                         >
                           {item.badge}
@@ -269,10 +263,10 @@ export const AnimatedSidebar: React.FC<AnimatedSidebarProps> = ({
                   <Tooltip.Content
                     side="right"
                     sideOffset={10}
-                    className="z-50 rounded-lg border border-slate-700 bg-slate-900 px-3 py-1.5 text-xs font-semibold text-white shadow-xl"
+                    className="z-50 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-800 shadow-xl"
                   >
                     {item.label}
-                    <Tooltip.Arrow className="fill-slate-900" />
+                    <Tooltip.Arrow className="fill-white" />
                   </Tooltip.Content>
                 </Tooltip.Portal>
               </Tooltip.Root>
@@ -280,46 +274,17 @@ export const AnimatedSidebar: React.FC<AnimatedSidebarProps> = ({
           })}
         </nav>
 
-        {/* User Profile & Logout Footer */}
-        <div className="border-t border-slate-800/80 p-3">
-          <div className="rounded-xl border border-slate-800/90 bg-slate-900/80 p-2.5">
-            <div className="flex items-center gap-2.5">
-              <div
-                className={cn(
-                  'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg font-mono text-xs font-bold text-white',
-                  meta.iconBgClass,
-                )}
-              >
-                {userName.slice(0, 2).toUpperCase()}
-              </div>
-              <AnimatePresence initial={false}>
-                {!collapsed && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="min-w-0 flex-1"
-                  >
-                    <p className="truncate text-xs font-bold text-white">{userName}</p>
-                    <p className="truncate text-[11px] text-slate-400">
-                      {departmentName ? `${departmentName} · ` : ''}
-                      {userEmail}
-                    </p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            <button
-              type="button"
-              onClick={onLogout}
-              className={cn(
-                'mt-2.5 flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border border-slate-800 bg-slate-950/80 px-2.5 py-1.5 text-xs font-semibold text-slate-300 transition-colors hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-300',
-              )}
-            >
-              <LogOut className="h-3.5 w-3.5 shrink-0" />
-              {!collapsed && <span>Đăng xuất / Đổi tài khoản</span>}
-            </button>
+        {/* Minimal Clean Sidebar Footer (No dark bulky card) */}
+        <div className="border-t border-slate-200/80 p-3 bg-slate-50/60">
+          <div className="flex items-center justify-between px-2 py-1 text-[11px] text-slate-400">
+            {!collapsed ? (
+              <>
+                <span className="font-semibold text-slate-500">ATS Platform</span>
+                <span className="font-mono text-[10px] text-slate-400">v3.0 · RBAC</span>
+              </>
+            ) : (
+              <span className="mx-auto font-mono text-[10px] text-slate-400">v3</span>
+            )}
           </div>
         </div>
       </motion.aside>
