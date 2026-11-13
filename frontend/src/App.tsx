@@ -46,6 +46,7 @@ import {
   UserRole,
 } from '@/components/animate-ui/animated-sidebar';
 import { AnimatedTabsList } from '@/components/animate-ui/animated-tabs';
+import { UserProfileMenu } from '@/components/animate-ui/user-profile-menu';
 import {
   AnimatedSpringDialog,
   GuardAlertDialog,
@@ -498,6 +499,54 @@ export function App() {
   const handleLogout = () => {
     setCurrentUserId(null);
     setAuthError(null);
+  };
+
+  const handleUpdateUser = (updated: AccountUser) => {
+    setStore((prev) => ({
+      ...prev,
+      users: prev.users.map((u) => (u.id === updated.id ? updated : u)),
+      auditLogs: [
+        {
+          id: Date.now(),
+          time: nowFormatted(),
+          actorName: updated.fullName,
+          actorRole: updated.role,
+          action: 'USER_PROFILE_UPDATE',
+          detail: `Cập nhật hồ sơ tài khoản (${updated.email}): Họ tên="${updated.fullName}", SĐT="${updated.phone}"`,
+        },
+        ...prev.auditLogs,
+      ],
+    }));
+  };
+
+  const handleChangePassword = (
+    oldPass: string,
+    newPass: string,
+  ): { success: boolean; message: string } => {
+    if (!currentUser) return { success: false, message: 'Chưa đăng nhập!' };
+    if (currentUser.password !== oldPass) {
+      return { success: false, message: 'Mật khẩu hiện tại không chính xác!' };
+    }
+    if (newPass.length < 6) {
+      return { success: false, message: 'Mật khẩu mới phải có ít nhất 6 ký tự!' };
+    }
+    const updated = { ...currentUser, password: newPass };
+    setStore((prev) => ({
+      ...prev,
+      users: prev.users.map((u) => (u.id === updated.id ? updated : u)),
+      auditLogs: [
+        {
+          id: Date.now(),
+          time: nowFormatted(),
+          actorName: updated.fullName,
+          actorRole: updated.role,
+          action: 'USER_PASSWORD_CHANGE',
+          detail: `Đổi mật khẩu tài khoản (${updated.email}) thành công`,
+        },
+        ...prev.auditLogs,
+      ],
+    }));
+    return { success: true, message: 'Đổi mật khẩu thành công!' };
   };
 
   /**
@@ -1221,36 +1270,13 @@ export function App() {
               </span>
             </button>
 
-            {/* TOP-RIGHT USER IDENTITY & LOGOUT SECTION */}
-            <div className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-slate-50/80 p-1.5 shadow-2xs">
-              <div className="flex items-center gap-2.5 pl-1.5">
-                <div
-                  className={cn(
-                    'flex h-8 w-8 shrink-0 items-center justify-center rounded-xl font-mono text-xs font-bold text-white shadow-xs',
-                    currentMeta.iconBgClass,
-                  )}
-                >
-                  {currentUser.fullName.slice(0, 2).toUpperCase()}
-                </div>
-                <div className="hidden text-left sm:block">
-                  <p className="truncate text-xs font-bold text-slate-900">{currentUser.fullName}</p>
-                  <p className="truncate text-[10px] text-slate-500">
-                    {currentUser.department ? `${currentUser.department} · ` : ''}
-                    {currentUser.email}
-                  </p>
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={handleLogout}
-                className="flex cursor-pointer items-center gap-1.5 rounded-xl border border-red-200 bg-red-50/90 px-3 py-1.5 text-xs font-bold text-red-700 shadow-2xs transition-colors hover:border-red-300 hover:bg-red-100 hover:text-red-800"
-                title="Đăng xuất / Đổi tài khoản"
-              >
-                <LogOut className="h-3.5 w-3.5" />
-                <span className="hidden md:inline">Đăng xuất / Đổi tài khoản</span>
-              </button>
-            </div>
+            {/* TOP-RIGHT USER IDENTITY & ACTION MENU (MODERN SAAS DROPDOWN) */}
+            <UserProfileMenu
+              currentUser={currentUser}
+              onLogout={handleLogout}
+              onUpdateUser={handleUpdateUser}
+              onChangePassword={handleChangePassword}
+            />
           </div>
         </header>
 
