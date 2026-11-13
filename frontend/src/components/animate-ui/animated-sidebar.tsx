@@ -20,7 +20,7 @@ import {
   Users,
 } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { cn } from '@/lib/utils';
 
 export type UserRole = 'ADMIN' | 'HIRING_MANAGER' | 'HR' | 'INTERVIEWER' | 'CANDIDATE';
@@ -138,6 +138,18 @@ export const AnimatedSidebar: React.FC<AnimatedSidebarProps> = ({
   const meta = ROLE_META[role];
   const navItems = ROLE_NAV_CONFIG[role];
 
+  // UI/UX Pro Max: Global Keyboard Shortcut Ctrl+B / Cmd+B to toggle sidebar
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'b') {
+        e.preventDefault();
+        onToggleCollapsed();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [onToggleCollapsed]);
+
   return (
     <Tooltip.Provider delayDuration={70}>
       <motion.aside
@@ -149,15 +161,33 @@ export const AnimatedSidebar: React.FC<AnimatedSidebarProps> = ({
         {/* Subtle top ambient glow */}
         <div className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-slate-100/70 to-transparent" />
 
-        {/* Floating Sidebar Toggle Button (Floating on the border edge to never overlap the logo) */}
-        <button
-          type="button"
-          onClick={onToggleCollapsed}
-          aria-label={collapsed ? 'Mở rộng Sidebar' : 'Thu gọn Sidebar'}
-          className="absolute -right-3 top-5 z-40 flex h-6 w-6 cursor-pointer items-center justify-center rounded-full border border-slate-200 bg-white text-slate-500 shadow-xs transition-all hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900 active:scale-95"
-        >
-          {collapsed ? <ChevronRight className="h-3.5 w-3.5" /> : <ChevronLeft className="h-3.5 w-3.5" />}
-        </button>
+        {/* Floating Sidebar Toggle Button (UI/UX Pro Max: 32px WCAG touch target, centered on header border, elevated floating shadow) */}
+        <Tooltip.Root>
+          <Tooltip.Trigger asChild>
+            <button
+              type="button"
+              onClick={onToggleCollapsed}
+              aria-label={collapsed ? 'Mở rộng Sidebar (Ctrl+B)' : 'Thu gọn Sidebar (Ctrl+B)'}
+              className="group absolute -right-4 top-8 z-50 flex h-8 w-8 -translate-y-1/2 cursor-pointer items-center justify-center rounded-full border border-slate-200/90 bg-white text-slate-600 shadow-md shadow-slate-900/10 ring-1 ring-slate-900/5 transition-all duration-200 hover:scale-110 hover:border-amber-400 hover:bg-amber-50/80 hover:text-amber-800 hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500/40 active:scale-95"
+            >
+              {collapsed ? (
+                <ChevronRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+              ) : (
+                <ChevronLeft className="h-4 w-4 transition-transform duration-200 group-hover:-translate-x-0.5" />
+              )}
+            </button>
+          </Tooltip.Trigger>
+          <Tooltip.Portal>
+            <Tooltip.Content
+              side="right"
+              sideOffset={12}
+              className="z-[9999] rounded-xl border border-slate-200/90 bg-white px-3 py-1.5 text-xs font-bold text-slate-800 shadow-xl"
+            >
+              {collapsed ? 'Mở rộng Sidebar (Ctrl+B)' : 'Thu gọn Sidebar (Ctrl+B)'}
+              <Tooltip.Arrow className="fill-white" />
+            </Tooltip.Content>
+          </Tooltip.Portal>
+        </Tooltip.Root>
 
         {/* Portal Brand Header */}
         <div

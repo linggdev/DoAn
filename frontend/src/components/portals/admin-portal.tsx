@@ -39,6 +39,7 @@ import {
 import React, { useMemo, useState } from 'react';
 import { ROLE_META, UserRole } from '@/components/animate-ui/animated-sidebar';
 import { GuardViolationState } from '@/components/animate-ui/guard-dialog';
+import { ModernSelect } from '@/components/animate-ui/modern-select';
 import { JobSetupView } from '@/components/portals/job-setup-view';
 import {
   AccountUser,
@@ -1162,8 +1163,8 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                 </p>
               </div>
 
-              {/* Search & Status Filter */}
-              <div className="flex flex-wrap items-center gap-2">
+              {/* Search & Status Filter (UI/UX PRO MAX Rounded-2xl Styling) */}
+              <div className="flex flex-wrap items-center gap-2.5">
                 <div className="relative">
                   <Search className="pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
                   <input
@@ -1171,21 +1172,30 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                     value={userSearch}
                     onChange={(e) => setUserSearch(e.target.value)}
                     placeholder="Tìm tên, email, SĐT, phòng ban..."
-                    className="w-60 rounded-xl border border-slate-200 bg-slate-50 py-1.5 pr-3 pl-8 text-xs focus:border-amber-500 focus:bg-white focus:outline-none"
+                    className="w-64 rounded-2xl border border-slate-200/90 bg-white py-1.5 pr-3 pl-8 text-xs shadow-2xs transition-all focus:border-amber-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-400/20"
                   />
                 </div>
 
-                <select
+                <ModernSelect<'ALL' | 'ACTIVE' | 'INACTIVE'>
                   value={statusFilter}
-                  onChange={(e) =>
-                    setStatusFilter(e.target.value as 'ALL' | 'ACTIVE' | 'INACTIVE')
-                  }
-                  className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700"
-                >
-                  <option value="ALL">Mọi trạng thái</option>
-                  <option value="ACTIVE">Đang hoạt động (ACTIVE)</option>
-                  <option value="INACTIVE">Đã khóa (INACTIVE)</option>
-                </select>
+                  onChange={(val) => setStatusFilter(val)}
+                  options={[
+                    { value: 'ALL', label: 'Mọi trạng thái' },
+                    {
+                      value: 'ACTIVE',
+                      label: 'Đang hoạt động',
+                      badge: 'ACTIVE',
+                      badgeColor: 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200/60',
+                    },
+                    {
+                      value: 'INACTIVE',
+                      label: 'Đã khóa',
+                      badge: 'INACTIVE',
+                      badgeColor: 'bg-red-50 text-red-700 ring-1 ring-red-200/60',
+                    },
+                  ]}
+                  triggerClassName="rounded-2xl"
+                />
               </div>
             </div>
 
@@ -2222,7 +2232,8 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                   </p>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-2">
+                {/* Search & Governance Multi-Filter (UI/UX PRO MAX Rounded-2xl Styling) */}
+                <div className="flex flex-wrap items-center gap-2.5">
                   <div className="relative">
                     <Search className="pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
                     <input
@@ -2230,62 +2241,60 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                       value={govCandidateSearch}
                       onChange={(e) => setGovCandidateSearch(e.target.value)}
                       placeholder="Tìm tên, email, SĐT, mã token..."
-                      className="w-60 rounded-xl border border-slate-200 bg-slate-50 py-1.5 pr-3 pl-8 text-xs focus:border-amber-500 focus:bg-white focus:outline-none"
+                      className="w-64 rounded-2xl border border-slate-200/90 bg-white py-1.5 pr-3 pl-8 text-xs shadow-2xs transition-all focus:border-amber-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-400/20"
                     />
                   </div>
 
-                  <select
+                  <ModernSelect<
+                    'ALL' | 'KNOCKOUT' | 'VARIANCE' | 'PENDING_OFFER' | 'HIRED'
+                  >
                     value={candidateAlertFilter}
-                    onChange={(e) =>
-                      setCandidateAlertFilter(
-                        e.target.value as
-                          | 'ALL'
-                          | 'KNOCKOUT'
-                          | 'VARIANCE'
-                          | 'PENDING_OFFER'
-                          | 'HIRED',
-                      )
-                    }
-                    className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700"
-                  >
-                    <option value="ALL">Mọi trạng thái cảnh báo</option>
-                    <option value="PENDING_OFFER">
-                      Chờ duyệt Offer ({pendingGlobalOffers.length})
-                    </option>
-                    <option value="KNOCKOUT">Cảnh báo Điểm liệt (Knockout)</option>
-                    <option value="VARIANCE">Lệch điểm hội đồng (Δ ≥ 2.0)</option>
-                    <option value="HIRED">Đã trúng tuyển (HIRED)</option>
-                  </select>
+                    onChange={(val) => setCandidateAlertFilter(val)}
+                    options={[
+                      { value: 'ALL', label: 'Mọi trạng thái cảnh báo' },
+                      {
+                        value: 'PENDING_OFFER',
+                        label: 'Chờ duyệt Offer',
+                        badge: `${pendingGlobalOffers.length}`,
+                        badgeColor: 'bg-amber-100 text-amber-800',
+                      },
+                      { value: 'KNOCKOUT', label: 'Cảnh báo Điểm liệt', badge: 'Knockout', badgeColor: 'bg-red-50 text-red-700' },
+                      { value: 'VARIANCE', label: 'Lệch điểm hội đồng', badge: 'Δ ≥ 2.0', badgeColor: 'bg-indigo-50 text-indigo-700' },
+                      { value: 'HIRED', label: 'Đã trúng tuyển', badge: 'HIRED', badgeColor: 'bg-emerald-50 text-emerald-700' },
+                    ]}
+                    triggerClassName="rounded-2xl"
+                  />
 
-                  <select
+                  <ModernSelect<number | 'ALL'>
                     value={govJobFilter}
-                    onChange={(e) =>
-                      setGovJobFilter(e.target.value === 'ALL' ? 'ALL' : Number(e.target.value))
-                    }
-                    className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700"
-                  >
-                    <option value="ALL">Tất cả Chiến dịch Job</option>
-                    {store.jobs.map((j) => (
-                      <option key={j.id} value={j.id}>
-                        #{j.id} {j.title}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(val) => setGovJobFilter(val)}
+                    options={[
+                      { value: 'ALL', label: 'Tất cả Chiến dịch Job' },
+                      ...store.jobs.map((j) => ({
+                        value: j.id,
+                        label: `#${j.id} ${j.title}`,
+                        badge: `${j.filledCount}/${j.headcount}`,
+                        badgeColor: j.filledCount >= j.headcount ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700',
+                      })),
+                    ]}
+                    triggerClassName="rounded-2xl"
+                  />
 
-                  <select
+                  <ModernSelect<'ALL' | StageCode>
                     value={govStageFilter}
-                    onChange={(e) => setGovStageFilter(e.target.value as 'ALL' | StageCode)}
-                    className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700"
-                  >
-                    <option value="ALL">Tất cả Vòng (Stages)</option>
-                    <option value="APPLIED">APPLIED</option>
-                    <option value="SCREENING">SCREENING</option>
-                    <option value="TEST">TEST</option>
-                    <option value="INTERVIEW">INTERVIEW</option>
-                    <option value="OFFER">OFFER</option>
-                    <option value="HIRED">HIRED</option>
-                    <option value="REJECTED">REJECTED</option>
-                  </select>
+                    onChange={(val) => setGovStageFilter(val)}
+                    options={[
+                      { value: 'ALL', label: 'Tất cả Vòng (Stages)' },
+                      { value: 'APPLIED', label: 'APPLIED (Nộp đơn)' },
+                      { value: 'SCREENING', label: 'SCREENING (Duyệt HS)' },
+                      { value: 'TEST', label: 'TEST (Đánh giá)' },
+                      { value: 'INTERVIEW', label: 'INTERVIEW (Phỏng vấn)' },
+                      { value: 'OFFER', label: 'OFFER (Đề nghị)' },
+                      { value: 'HIRED', label: 'HIRED (Đã tuyển)' },
+                      { value: 'REJECTED', label: 'REJECTED (Loại)' },
+                    ]}
+                    triggerClassName="rounded-2xl"
+                  />
                 </div>
               </div>
 
@@ -2532,7 +2541,8 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                 </p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2">
+              {/* Audit Search & Multi-Filters (UI/UX PRO MAX Rounded-2xl Styling) */}
+              <div className="flex flex-wrap items-center gap-2.5">
                 <div className="relative">
                   <Search className="pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
                   <input
@@ -2540,38 +2550,36 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                     value={auditSearch}
                     onChange={(e) => setAuditSearch(e.target.value)}
                     placeholder="Tìm mã sự kiện, người thực hiện..."
-                    className="w-56 rounded-xl border border-slate-200 bg-slate-50 py-1.5 pr-3 pl-8 text-xs"
+                    className="w-56 rounded-2xl border border-slate-200/90 bg-white py-1.5 pr-3 pl-8 text-xs shadow-2xs transition-all focus:border-amber-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-400/20"
                   />
                 </div>
 
-                <select
+                <ModernSelect<'ALL' | 'IAM' | 'PIPELINE' | 'EVAL' | 'JOB'>
                   value={auditCategoryFilter}
-                  onChange={(e) =>
-                    setAuditCategoryFilter(
-                      e.target.value as 'ALL' | 'IAM' | 'PIPELINE' | 'EVAL' | 'JOB',
-                    )
-                  }
-                  className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700"
-                >
-                  <option value="ALL">Mọi nhóm sự kiện</option>
-                  <option value="IAM">Tài khoản & RBAC (IAM)</option>
-                  <option value="JOB">Định biên & Cấu hình Job</option>
-                  <option value="PIPELINE">Luồng Pipeline & Offer</option>
-                  <option value="EVAL">Chấm điểm & Calibration</option>
-                </select>
+                  onChange={(val) => setAuditCategoryFilter(val)}
+                  options={[
+                    { value: 'ALL', label: 'Mọi nhóm sự kiện' },
+                    { value: 'IAM', label: 'Tài khoản & RBAC', badge: 'IAM', badgeColor: 'bg-amber-50 text-amber-800' },
+                    { value: 'JOB', label: 'Định biên & Job', badge: 'JOB', badgeColor: 'bg-blue-50 text-blue-800' },
+                    { value: 'PIPELINE', label: 'Pipeline & Offer', badge: 'FSM', badgeColor: 'bg-emerald-50 text-emerald-800' },
+                    { value: 'EVAL', label: 'Scorecard & Calibration', badge: 'EVAL', badgeColor: 'bg-purple-50 text-purple-800' },
+                  ]}
+                  triggerClassName="rounded-2xl"
+                />
 
-                <select
+                <ModernSelect<'ALL' | UserRole>
                   value={auditRoleFilter}
-                  onChange={(e) => setAuditRoleFilter(e.target.value as 'ALL' | UserRole)}
-                  className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700"
-                >
-                  <option value="ALL">Mọi Role</option>
-                  <option value="ADMIN">ADMIN</option>
-                  <option value="HIRING_MANAGER">HIRING_MANAGER</option>
-                  <option value="HR">HR</option>
-                  <option value="INTERVIEWER">INTERVIEWER</option>
-                  <option value="CANDIDATE">CANDIDATE</option>
-                </select>
+                  onChange={(val) => setAuditRoleFilter(val)}
+                  options={[
+                    { value: 'ALL', label: 'Mọi Role' },
+                    { value: 'ADMIN', label: 'ADMIN (Quản trị)', badge: 'ADMIN', badgeColor: 'bg-amber-100 text-amber-900' },
+                    { value: 'HIRING_MANAGER', label: 'HIRING MANAGER', badge: 'HM', badgeColor: 'bg-emerald-100 text-emerald-900' },
+                    { value: 'HR', label: 'HR RECRUITER', badge: 'HR', badgeColor: 'bg-blue-100 text-blue-900' },
+                    { value: 'INTERVIEWER', label: 'INTERVIEWER', badge: 'INT', badgeColor: 'bg-violet-100 text-violet-900' },
+                    { value: 'CANDIDATE', label: 'CANDIDATE', badge: 'CAND', badgeColor: 'bg-sky-100 text-sky-900' },
+                  ]}
+                  triggerClassName="rounded-2xl"
+                />
 
                 <button
                   type="button"

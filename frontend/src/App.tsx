@@ -46,6 +46,7 @@ import {
   UserRole,
 } from '@/components/animate-ui/animated-sidebar';
 import { AnimatedTabsList } from '@/components/animate-ui/animated-tabs';
+import { ModernSelect } from '@/components/animate-ui/modern-select';
 import { UserProfileMenu } from '@/components/animate-ui/user-profile-menu';
 import {
   AnimatedSpringDialog,
@@ -1620,21 +1621,18 @@ export function App() {
                   {/* Search, Multi-Filter & S3.22 Race Condition Bar */}
                   <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
                     <div className="flex flex-wrap items-center gap-2">
-                      {/* Job Campaign Selector in Kanban Toolbar */}
-                      <div className="flex items-center gap-1.5 rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs">
-                        <span className="font-semibold text-slate-500">Chiến dịch:</span>
-                        <select
-                          value={selectedJob.id}
-                          onChange={(e) => setSelectedJobId(Number(e.target.value))}
-                          className="bg-transparent font-bold text-slate-900 focus:outline-none"
-                        >
-                          {store.jobs.map((j) => (
-                            <option key={j.id} value={j.id}>
-                              #{j.id} {j.title} ({j.filledCount}/{j.headcount})
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                      {/* Job Campaign Selector in Kanban Toolbar (ModernSelect UI/UX PRO MAX) */}
+                      <ModernSelect<number>
+                        value={selectedJob.id}
+                        onChange={(val) => setSelectedJobId(Number(val))}
+                        options={store.jobs.map((j) => ({
+                          value: j.id,
+                          label: `#${j.id} ${j.title}`,
+                          badge: `${j.filledCount}/${j.headcount}`,
+                          badgeColor: j.filledCount >= j.headcount ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700',
+                        }))}
+                        triggerClassName="rounded-2xl"
+                      />
 
                       <div className="relative w-56">
                         <Search className="absolute top-2.5 left-3 h-3.5 w-3.5 text-slate-400" />
