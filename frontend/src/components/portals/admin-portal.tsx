@@ -1199,18 +1199,26 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
               </div>
             </div>
 
-            {/* Create User Form */}
-            <div className="mt-4 rounded-2xl border border-amber-200/90 bg-amber-50/40 p-4 text-xs shadow-2xs">
-              <div className="flex items-center justify-between border-b border-amber-200/60 pb-2.5">
-                <div className="flex items-center gap-2">
-                  <UserPlus className="h-4 w-4 text-amber-700" />
-                  <span className="font-bold text-slate-900">
-                    Cấp Mới Tài Khoản & Gán Quyền Truy Cập (IAM Provisioning)
-                  </span>
+            {/* Create User Form (UI/UX PRO MAX Symmetrical Layout & Dedicated Action Section) */}
+            <div className="mt-4 rounded-2xl border border-amber-200/90 bg-amber-50/40 p-5 text-xs shadow-2xs">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-200/60 pb-3">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-amber-500/20 text-amber-800">
+                    <UserPlus className="h-4 w-4 text-amber-700" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900">
+                      Cấp Mới Tài Khoản & Gán Quyền Truy Cập (IAM Provisioning)
+                    </h3>
+                    <p className="text-[11px] text-slate-500">
+                      Tạo tài khoản nhân sự mới và cấu hình phân quyền nghiêm ngặt theo chuẩn Strict 5-Role RBAC.
+                    </p>
+                  </div>
                 </div>
-                <span className="text-[11px] text-slate-500">
-                  Mật khẩu mặc định: <code className="font-bold text-slate-700">Password@123</code>
-                </span>
+                <div className="flex items-center gap-1.5 rounded-xl border border-amber-200 bg-white px-3 py-1 text-[11px] font-semibold text-amber-900 shadow-2xs">
+                  <KeyRound className="h-3 w-3 text-amber-600" />
+                  <span>Mật khẩu mặc định: <code className="font-mono font-bold text-slate-900">Password@123</code></span>
+                </div>
               </div>
 
               <form
@@ -1252,10 +1260,13 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                   );
                   setNewUserName('');
                   setNewUserEmail('');
+                  setNewUserPhone('');
+                  setNewUserPassword('Password@123');
                 }}
-                className="mt-3.5 space-y-3"
+                className="mt-4 space-y-3.5"
               >
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                {/* Row 1: Basic Identity Information */}
+                <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
                   <div>
                     <label className="block text-[11px] font-bold text-slate-700">
                       Họ và tên nhân sự <span className="text-red-500">*</span>
@@ -1266,7 +1277,7 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                       value={newUserName}
                       onChange={(e) => setNewUserName(e.target.value)}
                       placeholder="Ví dụ: Nguyễn Văn A"
-                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 focus:border-amber-500 focus:outline-none"
+                      className="mt-1 w-full rounded-2xl border border-slate-200/90 bg-white px-3.5 py-2 text-xs text-slate-900 shadow-2xs transition-all focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400/20"
                     />
                   </div>
                   <div>
@@ -1279,7 +1290,7 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                       value={newUserEmail}
                       onChange={(e) => setNewUserEmail(e.target.value)}
                       placeholder="user@ats.local"
-                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono text-xs text-slate-900 focus:border-amber-500 focus:outline-none"
+                      className="mt-1 w-full rounded-2xl border border-slate-200/90 bg-white px-3.5 py-2 font-mono text-xs text-slate-900 shadow-2xs transition-all focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400/20"
                     />
                   </div>
                   <div>
@@ -1288,72 +1299,100 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                     </label>
                     <input
                       type="text"
-                      required
                       value={newUserPhone}
                       onChange={(e) => setNewUserPhone(e.target.value)}
                       placeholder="0909888777"
-                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono text-xs text-slate-900 focus:border-amber-500 focus:outline-none"
+                      className="mt-1 w-full rounded-2xl border border-slate-200/90 bg-white px-3.5 py-2 font-mono text-xs text-slate-900 shadow-2xs transition-all focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400/20"
                     />
                   </div>
                 </div>
 
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                {/* Row 2: Role, Department & Password Setup */}
+                <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-700">
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
                       Vai trò được cấp (RBAC Role) <span className="text-red-500">*</span>
                     </label>
-                    <select
+                    <ModernSelect<UserRole>
                       value={newUserRole}
-                      onChange={(e) => setNewUserRole(e.target.value as UserRole)}
-                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono text-xs font-bold text-slate-800 focus:border-amber-500 focus:outline-none"
-                    >
-                      <option value="HR">HR (Chuyên viên Tuyển dụng)</option>
-                      <option value="HIRING_MANAGER">HIRING_MANAGER (Trưởng bộ phận)</option>
-                      <option value="INTERVIEWER">INTERVIEWER (Giám khảo)</option>
-                      <option value="ADMIN">ADMIN (Quản trị viên)</option>
-                      <option value="CANDIDATE">CANDIDATE (Ứng viên)</option>
-                    </select>
+                      onChange={(r) => setNewUserRole(r)}
+                      options={[
+                        { value: 'HR', label: 'HR (Chuyên viên Tuyển dụng)', badge: 'HR', badgeColor: 'bg-blue-100 text-blue-900' },
+                        { value: 'HIRING_MANAGER', label: 'HIRING_MANAGER (Trưởng bộ phận)', badge: 'HM', badgeColor: 'bg-emerald-100 text-emerald-900' },
+                        { value: 'INTERVIEWER', label: 'INTERVIEWER (Giám khảo)', badge: 'INT', badgeColor: 'bg-violet-100 text-violet-900' },
+                        { value: 'ADMIN', label: 'ADMIN (Quản trị viên)', badge: 'ADMIN', badgeColor: 'bg-amber-100 text-amber-900' },
+                        { value: 'CANDIDATE', label: 'CANDIDATE (Ứng viên)', badge: 'CAND', badgeColor: 'bg-sky-100 text-sky-900' },
+                      ]}
+                      className="w-full"
+                      triggerClassName="w-full rounded-2xl py-2"
+                    />
                   </div>
                   <div>
-                    <label className="block text-[11px] font-bold text-slate-700">
+                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
                       Phòng ban trực thuộc
                     </label>
-                    <select
+                    <ModernSelect<string>
                       value={newUserDept}
                       disabled={newUserRole === 'CANDIDATE'}
-                      onChange={(e) => setNewUserDept(e.target.value)}
-                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 disabled:opacity-50 focus:border-amber-500 focus:outline-none"
-                    >
-                      <option value="Executive & IT Governance">Executive & IT Governance</option>
-                      <option value="People & Talent">People & Talent</option>
-                      {store.departments.map((d) => (
-                        <option key={d.id} value={d.name}>
-                          {d.name}
-                        </option>
-                      ))}
-                    </select>
+                      onChange={(dept) => setNewUserDept(dept)}
+                      options={[
+                        { value: 'Executive & IT Governance', label: 'Executive & IT Governance' },
+                        { value: 'People & Talent', label: 'People & Talent' },
+                        ...store.departments.map((d) => ({
+                          value: d.name,
+                          label: d.name,
+                        })),
+                      ]}
+                      className="w-full"
+                      triggerClassName="w-full rounded-2xl py-2"
+                    />
                   </div>
                   <div>
                     <label className="block text-[11px] font-bold text-slate-700">
-                      Mật khẩu khởi tạo
+                      Mật khẩu khởi tạo (≥ 6 ký tự)
                     </label>
-                    <div className="mt-1 flex items-center gap-2">
-                      <input
-                        type="text"
-                        required
-                        value={newUserPassword}
-                        onChange={(e) => setNewUserPassword(e.target.value)}
-                        placeholder="Mật khẩu (≥ 6 ký tự)"
-                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono text-xs focus:border-amber-500 focus:outline-none"
-                      />
-                      <button
-                        type="submit"
-                        className="inline-flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2 font-bold text-white shadow-xs hover:bg-amber-600"
-                      >
-                        <Plus className="h-3.5 w-3.5" />
-                        Tạo User
-                      </button>
-                    </div>
+                    <input
+                      type="text"
+                      required
+                      value={newUserPassword}
+                      onChange={(e) => setNewUserPassword(e.target.value)}
+                      placeholder="Mật khẩu (≥ 6 ký tự)"
+                      className="mt-1 w-full rounded-2xl border border-slate-200/90 bg-white px-3.5 py-2 font-mono text-xs text-slate-900 shadow-2xs transition-all focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400/20"
+                    />
+                  </div>
+                </div>
+
+                {/* Complete Form Action Bar (UI/UX PRO MAX - Perfectly Balanced & Non-Crammed) */}
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-amber-200/70 pt-3.5">
+                  <div className="flex items-center gap-2 text-[11px] text-amber-900/80">
+                    <ShieldCheck className="h-4 w-4 shrink-0 text-amber-600" />
+                    <span>Tài khoản mới sẽ kích hoạt tức thì theo quyền hạn RBAC và được kiểm soát phiên đăng nhập độc lập.</span>
+                  </div>
+
+                  <div className="flex items-center gap-2.5">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setNewUserName('');
+                        setNewUserEmail('');
+                        setNewUserPhone('');
+                        setNewUserPassword('Password@123');
+                        setNewUserRole('HR');
+                        setNewUserDept('People & Talent');
+                      }}
+                      className="inline-flex cursor-pointer items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-2xs transition-all hover:bg-slate-50 hover:text-slate-900 active:scale-95"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5 text-slate-400" />
+                      Làm mới
+                    </button>
+
+                    <button
+                      type="submit"
+                      className="inline-flex cursor-pointer items-center gap-2 rounded-2xl bg-amber-500 px-5 py-2 text-xs font-extrabold text-slate-950 shadow-md shadow-amber-500/20 transition-all hover:bg-amber-400 hover:shadow-lg active:scale-95"
+                    >
+                      <UserPlus className="h-4 w-4" />
+                      Cấp Mới & Kích Hoạt Tài Khoản
+                    </button>
                   </div>
                 </div>
               </form>
@@ -1770,45 +1809,54 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                 className="mt-4 space-y-3 text-xs"
               >
                 <div>
-                  <label className="block font-bold text-slate-700">Tên Phòng ban mới</label>
+                  <label className="block text-[11px] font-bold text-slate-700">Tên Phòng ban mới</label>
                   <input
                     type="text"
                     required
                     value={newDeptName}
                     onChange={(e) => setNewDeptName(e.target.value)}
                     placeholder="Ví dụ: Cyber Security & Cloud"
-                    className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2"
+                    className="mt-1 w-full rounded-2xl border border-slate-200/90 bg-white px-3.5 py-2 text-xs shadow-2xs transition-all focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400/20"
                   />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700">
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
                     Chỉ định Trưởng bộ phận (Hiring Manager)
                   </label>
-                  <select
+                  <ModernSelect<string>
                     value={newDeptManager}
-                    onChange={(e) => setNewDeptManager(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2"
-                  >
-                    {store.users
+                    onChange={(val) => setNewDeptManager(val)}
+                    options={store.users
                       .filter(
                         (u) =>
                           u.role === 'HIRING_MANAGER' ||
                           u.role === 'ADMIN' ||
                           u.role === 'INTERVIEWER',
                       )
-                      .map((u) => (
-                        <option key={u.id} value={u.fullName}>
-                          {u.fullName} ({u.role} · {u.email})
-                        </option>
-                      ))}
-                  </select>
+                      .map((u) => ({
+                        value: u.fullName,
+                        label: `${u.fullName} (${u.role})`,
+                        badge: u.role,
+                        badgeColor:
+                          u.role === 'HIRING_MANAGER'
+                            ? 'bg-emerald-100 text-emerald-900'
+                            : u.role === 'ADMIN'
+                              ? 'bg-amber-100 text-amber-900'
+                              : 'bg-violet-100 text-violet-900',
+                      }))}
+                    className="w-full"
+                    triggerClassName="w-full rounded-2xl py-2"
+                  />
                 </div>
-                <button
-                  type="submit"
-                  className="w-full cursor-pointer rounded-xl bg-amber-600 py-2.5 font-bold text-white shadow-md hover:bg-amber-700"
-                >
-                  + Thêm Phòng Ban Vào Tổ Chức
-                </button>
+                <div className="pt-2">
+                  <button
+                    type="submit"
+                    className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-amber-500 py-2.5 text-xs font-extrabold text-slate-950 shadow-md shadow-amber-500/20 transition-all hover:bg-amber-400 hover:shadow-lg active:scale-95"
+                  >
+                    <Plus className="h-4 w-4" />
+                    Thêm Phòng Ban Vào Tổ Chức
+                  </button>
+                </div>
               </form>
             </div>
 
@@ -3043,81 +3091,86 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3.5">
                 <div>
-                  <label className="block font-bold text-slate-700">Vai trò (RBAC Role)</label>
-                  <select
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Vai trò (RBAC Role)</label>
+                  <ModernSelect<UserRole>
                     value={editUserRole}
                     disabled={editingUser.id === currentUser.id}
-                    onChange={(e) => setEditUserRole(e.target.value as UserRole)}
-                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono text-xs font-bold disabled:opacity-50"
-                  >
-                    <option value="ADMIN">ADMIN</option>
-                    <option value="HIRING_MANAGER">HIRING_MANAGER</option>
-                    <option value="HR">HR</option>
-                    <option value="INTERVIEWER">INTERVIEWER</option>
-                    <option value="CANDIDATE">CANDIDATE</option>
-                  </select>
+                    onChange={(r) => setEditUserRole(r)}
+                    options={[
+                      { value: 'ADMIN', label: 'ADMIN (Quản trị)', badge: 'ADMIN', badgeColor: 'bg-amber-100 text-amber-900' },
+                      { value: 'HIRING_MANAGER', label: 'HIRING_MANAGER', badge: 'HM', badgeColor: 'bg-emerald-100 text-emerald-900' },
+                      { value: 'HR', label: 'HR RECRUITER', badge: 'HR', badgeColor: 'bg-blue-100 text-blue-900' },
+                      { value: 'INTERVIEWER', label: 'INTERVIEWER', badge: 'INT', badgeColor: 'bg-violet-100 text-violet-900' },
+                      { value: 'CANDIDATE', label: 'CANDIDATE', badge: 'CAND', badgeColor: 'bg-sky-100 text-sky-900' },
+                    ]}
+                    className="w-full"
+                    triggerClassName="w-full rounded-2xl py-2"
+                  />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700">Phòng ban</label>
-                  <select
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Phòng ban</label>
+                  <ModernSelect<string>
                     value={editUserDept}
                     disabled={editUserRole === 'CANDIDATE'}
-                    onChange={(e) => setEditUserDept(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs disabled:opacity-50"
-                  >
-                    <option value="Executive & IT Governance">Executive & IT Governance</option>
-                    <option value="People & Talent">People & Talent</option>
-                    <option value="Ứng viên bên ngoài">Ứng viên bên ngoài</option>
-                    {store.departments.map((d) => (
-                      <option key={d.id} value={d.name}>
-                        {d.name}
-                      </option>
-                    ))}
-                  </select>
+                    onChange={(dept) => setEditUserDept(dept)}
+                    options={[
+                      { value: 'Executive & IT Governance', label: 'Executive & IT Governance' },
+                      { value: 'People & Talent', label: 'People & Talent' },
+                      { value: 'Ứng viên bên ngoài', label: 'Ứng viên bên ngoài' },
+                      ...store.departments.map((d) => ({
+                        value: d.name,
+                        label: d.name,
+                      })),
+                    ]}
+                    className="w-full"
+                    triggerClassName="w-full rounded-2xl py-2"
+                  />
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-2 gap-3.5">
                 <div>
-                  <label className="block font-bold text-slate-700">Trạng thái tài khoản</label>
-                  <select
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">Trạng thái tài khoản</label>
+                  <ModernSelect<'ACTIVE' | 'INACTIVE'>
                     value={editUserStatus}
                     disabled={editingUser.id === currentUser.id}
-                    onChange={(e) => setEditUserStatus(e.target.value as 'ACTIVE' | 'INACTIVE')}
-                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold disabled:opacity-50"
-                  >
-                    <option value="ACTIVE">ACTIVE (Đang hoạt động)</option>
-                    <option value="INACTIVE">INACTIVE (Đã khóa)</option>
-                  </select>
+                    onChange={(st) => setEditUserStatus(st)}
+                    options={[
+                      { value: 'ACTIVE', label: 'Đang hoạt động', badge: 'ACTIVE', badgeColor: 'bg-emerald-50 text-emerald-700' },
+                      { value: 'INACTIVE', label: 'Đã khóa', badge: 'INACTIVE', badgeColor: 'bg-red-50 text-red-700' },
+                    ]}
+                    className="w-full"
+                    triggerClassName="w-full rounded-2xl py-2"
+                  />
                 </div>
                 <div>
-                  <label className="block font-bold text-slate-700">Mật khẩu mới (≥ 6 ký tự)</label>
+                  <label className="block text-[11px] font-bold text-slate-700">Mật khẩu mới (≥ 6 ký tự)</label>
                   <input
                     type="text"
                     required
                     minLength={6}
                     value={editUserPassword}
                     onChange={(e) => setEditUserPassword(e.target.value)}
-                    className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono text-xs focus:border-amber-500 focus:outline-none"
+                    className="mt-1 w-full rounded-2xl border border-slate-200/90 bg-white px-3.5 py-2 font-mono text-xs focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400/20"
                   />
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-2 border-t border-slate-100 pt-4">
+              <div className="flex items-center justify-end gap-2.5 border-t border-slate-100 pt-4">
                 <button
                   type="button"
                   onClick={() => setEditingUser(null)}
-                  className="cursor-pointer rounded-xl border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50"
+                  className="cursor-pointer rounded-2xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-all active:scale-95"
                 >
-                  Hủy
+                  Hủy thao tác
                 </button>
                 <button
                   type="submit"
-                  className="cursor-pointer rounded-xl bg-blue-600 px-5 py-2 font-bold text-white shadow-xs hover:bg-blue-700"
+                  className="cursor-pointer rounded-2xl bg-amber-500 px-5 py-2 text-xs font-extrabold text-slate-950 shadow-md shadow-amber-500/20 hover:bg-amber-400 hover:shadow-lg transition-all active:scale-95"
                 >
-                  Lưu Thay Đổi
+                  Lưu Thay Đổi Hồ Sơ
                 </button>
               </div>
             </form>

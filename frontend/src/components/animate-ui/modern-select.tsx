@@ -40,9 +40,23 @@ export function ModernSelect<T extends string | number = string>({
   disabled = false,
 }: ModernSelectProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
+  const [effectiveAlign, setEffectiveAlign] = useState<'left' | 'right'>(align);
   const containerRef = useRef<HTMLDivElement>(null);
 
   const selectedOption = options.find((opt) => opt.value === value);
+
+  // Auto-detect viewport boundary to prevent overflow on right side (UI/UX PRO MAX)
+  useEffect(() => {
+    if (isOpen && containerRef.current) {
+      const rect = containerRef.current.getBoundingClientRect();
+      const estimatedWidth = 230;
+      if (rect.left + estimatedWidth > window.innerWidth - 16) {
+        setEffectiveAlign('right');
+      } else {
+        setEffectiveAlign(align);
+      }
+    }
+  }, [isOpen, align]);
 
   // Close when clicking outside
   useEffect(() => {
@@ -125,7 +139,7 @@ export function ModernSelect<T extends string | number = string>({
         />
       </button>
 
-      {/* DROPDOWN MENU (ROUNDED-2XL UI/UX PRO MAX WITH HIGH Z-INDEX) */}
+      {/* DROPDOWN MENU (ROUNDED-2XL UI/UX PRO MAX WITH HIGH Z-INDEX & VIEWPORT AWARENESS) */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -134,8 +148,8 @@ export function ModernSelect<T extends string | number = string>({
             exit={{ opacity: 0, y: -4, scale: 0.96 }}
             transition={{ duration: 0.14, ease: 'easeOut' }}
             className={cn(
-              'absolute top-full z-[9999] mt-1.5 min-w-[210px] origin-top rounded-2xl border border-slate-200/90 bg-white p-1.5 shadow-2xl shadow-slate-900/15 ring-1 ring-slate-900/5',
-              align === 'right' ? 'right-0 origin-top-right' : 'left-0 origin-top-left',
+              'absolute top-full z-[9999] mt-1.5 min-w-[220px] rounded-2xl border border-slate-200/90 bg-white p-1.5 shadow-2xl shadow-slate-900/15 ring-1 ring-slate-900/5',
+              effectiveAlign === 'right' ? 'right-0 origin-top-right' : 'left-0 origin-top-left',
               dropdownClassName,
             )}
             role="listbox"
@@ -181,18 +195,18 @@ export function ModernSelect<T extends string | number = string>({
                       </div>
                     </div>
 
-                    <div className="flex shrink-0 items-center gap-1.5">
+                    <div className="flex shrink-0 items-center gap-1.5 ml-2">
                       {option.badge && (
                         <span
                           className={cn(
-                            'rounded-md px-1.5 py-0.2 font-mono text-[9px] font-bold uppercase',
+                            'rounded-md px-1.5 py-0.5 font-mono text-[9px] font-bold uppercase whitespace-nowrap',
                             option.badgeColor || 'bg-slate-100 text-slate-600',
                           )}
                         >
                           {option.badge}
                         </span>
                       )}
-                      {isSelected && <Check className="h-3.5 w-3.5 text-amber-600" />}
+                      {isSelected && <Check className="h-3.5 w-3.5 text-amber-600 shrink-0" />}
                     </div>
                   </button>
                 );
@@ -204,3 +218,4 @@ export function ModernSelect<T extends string | number = string>({
     </div>
   );
 }
+
