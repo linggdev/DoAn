@@ -1,0 +1,15 @@
+{
+  "name": "internal-enterprise-ats",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Internal Enterprise ATS & Candidate Evaluation Platform (Root Workspace)",
+  "scripts": {
+    "dev": "npm --prefix frontend run dev",
+    "dev:frontend": "npm --prefix frontend run dev",
+    "dev:backend": "npm --prefix backend run start:dev",
+    "build": "npm --prefix frontend run build && npm --prefix backend run build",
+    "test": "npm --prefix backend test -- --forceExit",
+    "seed": "npm --prefix backend run seed"
+  }
+}
+

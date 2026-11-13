@@ -1,0 +1,304 @@
+// Nguồn sự thật về dữ liệu — 13 bảng (xem docs/data-model.md, docs/DECISIONS.md)
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ───────────── Enums ─────────────
+enum Role {
+  ADMIN
+  HIRING_MANAGER
+  HR
+  INTERVIEWER
+  CANDIDATE
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+}
+
+enum RequisitionStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CLOSED
+}
+
+enum JobStatus {
+  DRAFT
+  PUBLISHED
+  CLOSED
+}
+
+enum StageCode {
+  APPLIED
+  SCREENING
+  TEST
+  INTERVIEW
+  OFFER
+  HIRED
+  REJECTED
+}
+
+enum ApplicationStatus {
+  ACTIVE
+  HIRED
+  REJECTED
+}
+
+enum InterviewStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+}
+
+enum Recommendation {
+  STRONG_HIRE
+  HIRE
+  NO_HIRE
+}
+
+// ───────────── Module: auth ─────────────
+model Department {
+  id        Int      @id @default(autoincrement())
+  name      String   @unique
+  managerId Int?     @map("manager_id")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  manager      User?            @relation("DepartmentManager", fields: [managerId], references: [id], onDelete: SetNull)
+  members      User[]           @relation("DepartmentMembers")
+  requisitions JobRequisition[]
+
+  @@map("departments")
+}
+
+model User {
+  id           Int        @id @default(autoincrement())
+  email        String     @unique
+  passwordHash String     @map("password_hash")
+  fullName     String     @map("full_name")
+  role         Role
+  departmentId Int?       @map("department_id")
+  status       UserStatus @default(ACTIVE)
+  createdAt    DateTime   @default(now()) @map("created_at")
+
+  department         Department?            @relation("DepartmentMembers", fields: [departmentId], references: [id], onDelete: SetNull)
+  managedDepartments Department[]           @relation("DepartmentManager")
+  requisitions       JobRequisition[]
+  stageChanges       ApplicationLog[]
+  interviewSeats     InterviewParticipant[]
+  evaluations        Evaluation[]
+  approvedOffers     Application[]          @relation("OfferApprover")
+  calibrations       Application[]          @relation("Calibrator")
+
+  @@map("users")
+}
+
+// ───────────── Module: recruitment ─────────────
+model JobRequisition {
+  id           Int               @id @default(autoincrement())
+  departmentId Int               @map("department_id")
+  requestedBy  Int               @map("requested_by")
+  title        String
+  headcount    Int
+  filledCount  Int               @default(0) @map("filled_count")
+  status       RequisitionStatus @default(PENDING)
+  createdAt    DateTime          @default(now()) @map("created_at")
+
+  department Department @relation(fields: [departmentId], references: [id])
+  requester  User       @relation(fields: [requestedBy], references: [id])
+  job        Job?
+
+  @@index([status])
+  @@map("job_requisitions")
+}
+
+model Job {
+  id                 Int       @id @default(autoincrement())
+  requisitionId      Int       @unique @map("requisition_id") // D14: 1 Requisition ↔ 1 Job
+  title              String
+  description        String
+  requirements       String
+  salaryRange        String?   @map("salary_range")
+  passScoreThreshold Decimal   @default(3.50) @map("pass_score_threshold") @db.Decimal(3, 2)
+  status             JobStatus @default(DRAFT)
+  createdAt          DateTime  @default(now()) @map("created_at")
+
+  requisition  JobRequisition      @relation(fields: [requisitionId], references: [id])
+  stages       JobStage[]
+  criteria     ScorecardCriterion[]
+  applications Application[]
+
+  @@index([status])
+  @@map("jobs")
+}
+
+model JobStage {
+  id         Int       @id @default(autoincrement())
+  jobId      Int       @map("job_id")
+  stageCode  StageCode @map("stage_code")
+  stageName  String    @map("stage_name")
+  stageOrder Int       @map("stage_order")
+
+  job                 Job              @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  currentApplications Application[]
+  logsFrom            ApplicationLog[] @relation("LogFromStage")
+  logsTo              ApplicationLog[] @relation("LogToStage")
+  interviews          Interview[]
+
+  @@unique([jobId, stageOrder])
+  @@unique([jobId, stageCode])
+  @@map("job_stages")
+}
+
+model ScorecardCriterion {
+  id            Int     @id @default(autoincrement())
+  jobId         Int     @map("job_id")
+  criteriaName  String  @map("criteria_name")
+  weightPercent Int     @map("weight_percent") // D02: số nguyên %, tổng theo Job = 100
+  isKnockout    Boolean @default(false) @map("is_knockout")
+
+  job    Job               @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  scores EvaluationScore[]
+
+  @@unique([jobId, criteriaName])
+  @@map("scorecard_criteria")
+}
+
+// ───────────── Module: candidate ─────────────
+model Candidate {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique // đã chuẩn hoá lowercase (D09)
+  phone     String?  // đã chuẩn hoá chỉ chữ số (D09)
+  fullName  String   @map("full_name")
+  resumeUrl String   @map("resume_url") // CV mới nhất
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  applications Application[]
+
+  @@index([phone])
+  @@map("candidates")
+}
+
+// ───────────── Module: pipeline ─────────────
+model Application {
+  id               Int               @id @default(autoincrement())
+  jobId            Int               @map("job_id")
+  candidateId      Int               @map("candidate_id")
+  currentStageId   Int               @map("current_stage_id")
+  resumeUrl        String            @map("resume_url") // snapshot CV lúc nộp (D09)
+  trackingToken    String            @unique @default(uuid()) @map("tracking_token") @db.Uuid
+  overallScore     Decimal?          @map("overall_score") @db.Decimal(3, 2)
+  hasVarianceAlert Boolean           @default(false) @map("has_variance_alert")
+  isDisqualified   Boolean           @default(false) @map("is_disqualified")
+  calibrationNote  String?           @map("calibration_note")
+  calibratedBy     Int?              @map("calibrated_by")
+  calibratedAt     DateTime?         @map("calibrated_at")
+  offerApprovedBy  Int?              @map("offer_approved_by")
+  offerApprovedAt  DateTime?         @map("offer_approved_at")
+  status           ApplicationStatus @default(ACTIVE)
+  appliedAt        DateTime          @default(now()) @map("applied_at")
+
+  job           Job              @relation(fields: [jobId], references: [id])
+  candidate     Candidate        @relation(fields: [candidateId], references: [id])
+  currentStage  JobStage         @relation(fields: [currentStageId], references: [id])
+  calibrator    User?            @relation("Calibrator", fields: [calibratedBy], references: [id])
+  offerApprover User?            @relation("OfferApprover", fields: [offerApprovedBy], references: [id])
+  logs          ApplicationLog[]
+  interviews    Interview[]
+
+  @@unique([jobId, candidateId])
+  @@index([jobId, status])
+  @@map("applications")
+}
+
+model ApplicationLog {
+  id            Int      @id @default(autoincrement())
+  applicationId Int      @map("application_id")
+  fromStageId   Int?     @map("from_stage_id")
+  toStageId     Int      @map("to_stage_id")
+  changedBy     Int?     @map("changed_by") // null = ứng viên tự nộp / hệ thống
+  note          String?
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  application Application @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  fromStage   JobStage?   @relation("LogFromStage", fields: [fromStageId], references: [id])
+  toStage     JobStage    @relation("LogToStage", fields: [toStageId], references: [id])
+  actor       User?       @relation(fields: [changedBy], references: [id])
+
+  @@index([applicationId, createdAt])
+  @@index([toStageId])
+  @@map("application_logs")
+}
+
+model Interview {
+  id              Int             @id @default(autoincrement())
+  applicationId   Int             @map("application_id")
+  stageId         Int             @map("stage_id")
+  scheduledAt     DateTime        @map("scheduled_at")
+  durationMinutes Int             @map("duration_minutes")
+  meetingLink     String?         @map("meeting_link")
+  location        String?
+  status          InterviewStatus @default(SCHEDULED)
+  createdAt       DateTime        @default(now()) @map("created_at")
+
+  application  Application            @relation(fields: [applicationId], references: [id], onDelete: Cascade)
+  stage        JobStage               @relation(fields: [stageId], references: [id])
+  participants InterviewParticipant[]
+  evaluations  Evaluation[]
+
+  @@index([applicationId, status])
+  @@map("interviews")
+}
+
+model InterviewParticipant {
+  id                    Int       @id @default(autoincrement())
+  interviewId           Int       @map("interview_id")
+  interviewerId         Int       @map("interviewer_id")
+  hasSubmittedScorecard Boolean   @default(false) @map("has_submitted_scorecard")
+  submittedAt           DateTime? @map("submitted_at")
+
+  interview   Interview @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  interviewer User      @relation(fields: [interviewerId], references: [id])
+
+  @@unique([interviewId, interviewerId])
+  @@map("interview_participants")
+}
+
+// ───────────── Module: evaluation ─────────────
+model Evaluation {
+  id             Int            @id @default(autoincrement())
+  interviewId    Int            @map("interview_id")
+  interviewerId  Int            @map("interviewer_id")
+  overallComment String?        @map("overall_comment")
+  recommendation Recommendation
+  createdAt      DateTime       @default(now()) @map("created_at")
+
+  interview   Interview         @relation(fields: [interviewId], references: [id], onDelete: Cascade)
+  interviewer User              @relation(fields: [interviewerId], references: [id])
+  scores      EvaluationScore[]
+
+  @@unique([interviewId, interviewerId])
+  @@map("evaluations")
+}
+
+model EvaluationScore {
+  id           Int     @id @default(autoincrement())
+  evaluationId Int     @map("evaluation_id")
+  criteriaId   Int     @map("criteria_id")
+  score        Decimal @db.Decimal(2, 1) // 1.0–5.0, bước 0.5 (D02)
+  comment      String?
+
+  evaluation Evaluation         @relation(fields: [evaluationId], references: [id], onDelete: Cascade)
+  criterion  ScorecardCriterion @relation(fields: [criteriaId], references: [id])
+
+  @@unique([evaluationId, criteriaId])
+  @@map("evaluation_scores")
+}
+
