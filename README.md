@@ -59,3 +59,10 @@ npm test
 npm run typecheck
 ```
 
+### 3. Cấu hình CSDL SQL Server (SSMS)
+Hệ thống đi kèm toàn bộ kịch bản T-SQL 13 bảng và nạp dữ liệu mẫu chuẩn enterprise:
+1. Mở **SQL Server Management Studio (SSMS)** và kết nối tới `localhost:1433`.
+2. Mở file [docs/setup_database_ssms.sql](docs/setup_database_ssms.sql).
+3. Bấm **Execute** (`F5`) để tự động tạo cơ sở dữ liệu `ATS_Enterprise_DB` và 13 bảng liên kết khoá ngoại, trigger & dữ liệu mẫu.
+4. Quản trị viên có thể theo dõi trạng thái đồng bộ CSDL ngay trên thanh công cụ của Cổng Quản trị (**Admin Portal**).
+
