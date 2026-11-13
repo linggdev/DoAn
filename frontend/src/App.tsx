@@ -1166,18 +1166,17 @@ export function App() {
                   </div>
                   {regRole !== 'CANDIDATE' && (
                     <div>
-                      <label className="block text-xs font-bold text-slate-700">Phòng ban</label>
-                      <select
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Phòng ban</label>
+                      <ModernSelect<string>
                         value={regDepartment}
-                        onChange={(e) => setRegDepartment(e.target.value)}
-                        className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs"
-                      >
-                        {store.departments.map((d) => (
-                          <option key={d.id} value={d.name}>
-                            {d.name}
-                          </option>
-                        ))}
-                      </select>
+                        onChange={(val) => setRegDepartment(val)}
+                        options={store.departments.map((d) => ({
+                          value: d.name,
+                          label: d.name,
+                        }))}
+                        className="w-full mt-1"
+                        triggerClassName="w-full rounded-2xl py-2 text-xs"
+                      />
                     </div>
                   )}
                 </div>
@@ -2529,17 +2528,19 @@ export function App() {
               />
             </div>
             <div>
-              <label className="block font-bold text-slate-700">Thời lượng (phút)</label>
-              <select
+              <label className="block font-bold text-slate-700 mb-1">Thời lượng</label>
+              <ModernSelect<number>
                 value={scheduleDuration}
-                onChange={(e) => setScheduleDuration(Number(e.target.value))}
-                className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono font-bold"
-              >
-                <option value={30}>30 phút</option>
-                <option value={45}>45 phút</option>
-                <option value={60}>60 phút</option>
-                <option value={90}>90 phút</option>
-              </select>
+                onChange={(val) => setScheduleDuration(Number(val))}
+                options={[
+                  { value: 30, label: '30 phút' },
+                  { value: 45, label: '45 phút' },
+                  { value: 60, label: '60 phút' },
+                  { value: 90, label: '90 phút' },
+                ]}
+                className="w-full mt-1"
+                triggerClassName="w-full rounded-2xl py-2 font-mono font-bold"
+              />
             </div>
           </div>
 

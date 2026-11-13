@@ -41,19 +41,30 @@ export function ModernSelect<T extends string | number = string>({
 }: ModernSelectProps<T>) {
   const [isOpen, setIsOpen] = useState(false);
   const [effectiveAlign, setEffectiveAlign] = useState<'left' | 'right'>(align);
+  const [placement, setPlacement] = useState<'bottom' | 'top'>('bottom');
   const containerRef = useRef<HTMLDivElement>(null);
 
   const selectedOption = options.find((opt) => opt.value === value);
 
-  // Auto-detect viewport boundary to prevent overflow on right side (UI/UX PRO MAX)
+  // Auto-detect viewport boundary to prevent overflow on right and bottom (UI/UX PRO MAX Smart Flip)
   useEffect(() => {
     if (isOpen && containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
       const estimatedWidth = 230;
+      const estimatedHeight = 240;
+
+      // Horizontal collision check
       if (rect.left + estimatedWidth > window.innerWidth - 16) {
         setEffectiveAlign('right');
       } else {
         setEffectiveAlign(align);
+      }
+
+      // Vertical collision check: Flip to top if overflowing bottom and space above exists
+      if (rect.bottom + estimatedHeight > window.innerHeight - 16 && rect.top > estimatedHeight) {
+        setPlacement('top');
+      } else {
+        setPlacement('bottom');
       }
     }
   }, [isOpen, align]);
@@ -143,12 +154,15 @@ export function ModernSelect<T extends string | number = string>({
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            initial={{ opacity: 0, y: -4, scale: 0.96 }}
+            initial={{ opacity: 0, y: placement === 'top' ? 4 : -4, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -4, scale: 0.96 }}
+            exit={{ opacity: 0, y: placement === 'top' ? 4 : -4, scale: 0.96 }}
             transition={{ duration: 0.14, ease: 'easeOut' }}
             className={cn(
-              'absolute top-full z-[9999] mt-1.5 min-w-[220px] rounded-2xl border border-slate-200/90 bg-white p-1.5 shadow-2xl shadow-slate-900/15 ring-1 ring-slate-900/5',
+              'absolute z-[9999] min-w-[220px] rounded-2xl border border-slate-200/90 bg-white p-1.5 shadow-2xl shadow-slate-900/15 ring-1 ring-slate-900/5',
+              placement === 'top'
+                ? 'bottom-full mb-1.5 origin-bottom'
+                : 'top-full mt-1.5 origin-top',
               effectiveAlign === 'right' ? 'right-0 origin-top-right' : 'left-0 origin-top-left',
               dropdownClassName,
             )}

@@ -8,6 +8,7 @@ import {
   Trash2,
 } from 'lucide-react';
 import React, { useState } from 'react';
+import { ModernSelect } from '@/components/animate-ui/modern-select';
 import {
   AccountUser,
   CriterionDef,
@@ -244,17 +245,22 @@ export const JobSetupView: React.FC<JobSetupViewProps> = ({
           </div>
 
           <div className="flex items-center gap-2">
-            <select
+            <ModernSelect<number>
               value={selectedJob.id}
-              onChange={(e) => onSelectJob(Number(e.target.value))}
-              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-800"
-            >
-              {jobs.map((j) => (
-                <option key={j.id} value={j.id}>
-                  Job #{j.id}: {j.title} ({j.status})
-                </option>
-              ))}
-            </select>
+              onChange={(val) => onSelectJob(Number(val))}
+              options={jobs.map((j) => ({
+                value: j.id,
+                label: `Job #${j.id}: ${j.title}`,
+                badge: j.status,
+                badgeColor:
+                  j.status === 'PUBLISHED'
+                    ? 'bg-emerald-100 text-emerald-900'
+                    : j.status === 'CLOSED'
+                      ? 'bg-red-100 text-red-900'
+                      : 'bg-amber-100 text-amber-900',
+              }))}
+              triggerClassName="rounded-2xl"
+            />
 
             {canEditJob && selectedJob.status !== 'PUBLISHED' && (
               <button

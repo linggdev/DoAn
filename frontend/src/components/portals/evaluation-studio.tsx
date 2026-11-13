@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 import { AnimatedAccordion, AnimatedTabsList } from '@/components/animate-ui/animated-tabs';
+import { ModernSelect } from '@/components/animate-ui/modern-select';
 import { AnimatedScoreTicker } from '@/components/animate-ui/score-ticker';
 import {
   AccountUser,
@@ -521,24 +522,26 @@ export const EvaluationStudioView: React.FC<EvaluationStudioProps> = ({
                 <label className="block font-bold text-slate-700">
                   Khuyến nghị Tuyển dụng (S4.1)
                 </label>
-                <select
+                <ModernSelect<RecommendationType>
                   disabled={isReadOnly}
                   value={activeSheet.recommendation}
-                  onChange={(e) =>
+                  onChange={(val) =>
                     onUpdateSheetMeta(
                       evalCandidate.id,
                       activeSheet.interviewerId,
-                      e.target.value as RecommendationType,
+                      val,
                       activeSheet.comment,
                     )
                   }
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono font-bold text-slate-900 disabled:bg-slate-100"
-                >
-                  <option value="STRONG_HIRE">STRONG_HIRE (Tuyển gấp)</option>
-                  <option value="HIRE">HIRE (Đề xuất tuyển)</option>
-                  <option value="NO_HIRE">NO_HIRE (Không đạt)</option>
-                  <option value="STRONG_NO_HIRE">STRONG_NO_HIRE (Loại thẳng)</option>
-                </select>
+                  options={[
+                    { value: 'STRONG_HIRE', label: 'STRONG_HIRE (Tuyển gấp)', badge: 'Ưu tiên', badgeColor: 'bg-emerald-100 text-emerald-900' },
+                    { value: 'HIRE', label: 'HIRE (Đề xuất tuyển)', badge: 'Đạt', badgeColor: 'bg-emerald-50 text-emerald-700' },
+                    { value: 'NO_HIRE', label: 'NO_HIRE (Không đạt)', badge: 'Chưa đạt', badgeColor: 'bg-amber-50 text-amber-800' },
+                    { value: 'STRONG_NO_HIRE', label: 'STRONG_NO_HIRE (Loại thẳng)', badge: 'Loại', badgeColor: 'bg-red-50 text-red-700' },
+                  ]}
+                  className="w-full mt-1"
+                  triggerClassName="w-full rounded-2xl py-2 font-mono font-bold text-slate-900"
+                />
               </div>
               <div>
                 <label className="block font-bold text-slate-700">

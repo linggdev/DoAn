@@ -1483,7 +1483,7 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
               </div>
             )}
 
-            <div className="mt-4 overflow-x-auto">
+            <div className="mt-4 overflow-x-auto min-h-[460px] pb-24">
               <table className="w-full text-left text-xs">
                 <thead>
                   <tr className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold text-slate-600 uppercase">
@@ -1548,13 +1548,12 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                           </p>
                         </td>
 
-                        {/* Direct Department Selector */}
-                        <td className="px-3.5 py-3">
-                          <select
+                        {/* Direct Department Selector (UI/UX PRO MAX ModernSelect) */}
+                        <td className="px-3.5 py-3 min-w-[210px]">
+                          <ModernSelect<string>
                             value={u.department}
                             disabled={u.role === 'CANDIDATE'}
-                            onChange={(e) => {
-                              const nextDept = e.target.value;
+                            onChange={(nextDept) => {
                               setStore((prev) => ({
                                 ...prev,
                                 users: prev.users.map((item) =>
@@ -1567,28 +1566,26 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                               );
                               notifyBanner(`Đã chuyển ${u.fullName} sang phòng ban ${nextDept}.`);
                             }}
-                            className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-medium text-slate-700 disabled:opacity-60"
-                          >
-                            <option value="Executive & IT Governance">
-                              Executive & IT Governance
-                            </option>
-                            <option value="People & Talent">People & Talent</option>
-                            <option value="Ứng viên bên ngoài">Ứng viên bên ngoài</option>
-                            {store.departments.map((d) => (
-                              <option key={d.id} value={d.name}>
-                                {d.name}
-                              </option>
-                            ))}
-                          </select>
+                            options={[
+                              { value: 'Executive & IT Governance', label: 'Executive & IT Governance' },
+                              { value: 'People & Talent', label: 'People & Talent' },
+                              { value: 'Ứng viên bên ngoài', label: 'Ứng viên bên ngoài' },
+                              ...store.departments.map((d) => ({
+                                value: d.name,
+                                label: d.name,
+                              })),
+                            ]}
+                            className="w-full"
+                            triggerClassName="w-full rounded-xl py-1 text-xs font-medium"
+                          />
                         </td>
 
-                        {/* Direct Role Selector */}
-                        <td className="px-3.5 py-3">
-                          <select
+                        {/* Direct Role Selector (UI/UX PRO MAX ModernSelect) */}
+                        <td className="px-3.5 py-3 min-w-[170px]">
+                          <ModernSelect<UserRole>
                             value={u.role}
                             disabled={isSelf}
-                            onChange={(e) => {
-                              const nextRole = e.target.value as UserRole;
+                            onChange={(nextRole) => {
                               setStore((prev) => ({
                                 ...prev,
                                 users: prev.users.map((item) =>
@@ -1603,14 +1600,16 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                                 `Đã đổi Role của ${u.email} sang ${nextRole}. Khi đăng nhập sẽ vào ${ROLE_META[nextRole].portalTitle}!`,
                               );
                             }}
-                            className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 font-mono text-xs font-bold text-slate-800 disabled:opacity-60"
-                          >
-                            <option value="ADMIN">ADMIN</option>
-                            <option value="HIRING_MANAGER">HIRING_MANAGER</option>
-                            <option value="HR">HR</option>
-                            <option value="INTERVIEWER">INTERVIEWER</option>
-                            <option value="CANDIDATE">CANDIDATE</option>
-                          </select>
+                            options={[
+                              { value: 'ADMIN', label: 'ADMIN', badge: 'ADMIN', badgeColor: 'bg-amber-100 text-amber-900' },
+                              { value: 'HIRING_MANAGER', label: 'HIRING_MANAGER', badge: 'HM', badgeColor: 'bg-emerald-100 text-emerald-900' },
+                              { value: 'HR', label: 'HR', badge: 'HR', badgeColor: 'bg-blue-100 text-blue-900' },
+                              { value: 'INTERVIEWER', label: 'INTERVIEWER', badge: 'INT', badgeColor: 'bg-violet-100 text-violet-900' },
+                              { value: 'CANDIDATE', label: 'CANDIDATE', badge: 'CAND', badgeColor: 'bg-sky-100 text-sky-900' },
+                            ]}
+                            className="w-full"
+                            triggerClassName="w-full rounded-xl py-1 font-mono text-xs font-bold"
+                          />
                         </td>
 
                         <td className="px-3.5 py-3 font-mono text-[11px] text-slate-500">
@@ -1955,22 +1954,28 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                           />
                         </div>
                         <div>
-                          <label className="block text-[11px] font-bold text-slate-700">
+                          <label className="block text-[11px] font-bold text-slate-700 mb-1">
                             Đổi Trưởng bộ phận (Hiring Manager)
                           </label>
-                          <select
+                          <ModernSelect<string>
                             value={editDeptManager}
-                            onChange={(e) => setEditDeptManager(e.target.value)}
-                            className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5"
-                          >
-                            {store.users
+                            onChange={(val) => setEditDeptManager(val)}
+                            options={store.users
                               .filter((u) => u.role !== 'CANDIDATE')
-                              .map((u) => (
-                                <option key={u.id} value={u.fullName}>
-                                  {u.fullName} ({u.role})
-                                </option>
-                              ))}
-                          </select>
+                              .map((u) => ({
+                                value: u.fullName,
+                                label: `${u.fullName} (${u.role})`,
+                                badge: u.role,
+                                badgeColor:
+                                  u.role === 'HIRING_MANAGER'
+                                    ? 'bg-emerald-100 text-emerald-900'
+                                    : u.role === 'ADMIN'
+                                      ? 'bg-amber-100 text-amber-900'
+                                      : 'bg-violet-100 text-violet-900',
+                              }))}
+                            className="w-full"
+                            triggerClassName="w-full rounded-xl py-1.5"
+                          />
                         </div>
                         <div className="flex justify-end gap-2 pt-1">
                           <button
