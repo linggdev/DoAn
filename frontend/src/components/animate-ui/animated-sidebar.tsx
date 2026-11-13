@@ -88,9 +88,11 @@ export const ROLE_META: Record<
 
 export const ROLE_NAV_CONFIG: Record<UserRole, RoleNavItem[]> = {
   ADMIN: [
-    { id: 'admin-users', label: 'Tài khoản & Phân quyền RBAC', badge: '5 Roles', icon: Users },
-    { id: 'admin-departments', label: 'Cơ cấu Phòng ban & Trưởng phòng', icon: Building2 },
-    { id: 'admin-audit', label: 'Nhật ký Kiểm toán (Audit Logs)', badge: 'ACID', icon: Activity },
+    { id: 'admin-overview', label: 'Tổng quan & Ma trận RBAC', badge: 'Command', icon: ShieldCheck },
+    { id: 'admin-users', label: 'Quản trị Tài khoản (IAM)', badge: '5 Roles', icon: Users },
+    { id: 'admin-departments', label: 'Cơ cấu Phòng ban & Trưởng bộ phận', icon: Building2 },
+    { id: 'admin-governance', label: 'Giám sát Chiến dịch & Hồ sơ', badge: 'All Jobs', icon: Sliders },
+    { id: 'admin-audit', label: 'Nhật ký Audit & Sao lưu Hệ thống', badge: 'ACID', icon: Activity },
   ],
   HIRING_MANAGER: [
     { id: 'hm-offers', label: 'Hàng đợi Duyệt Offer', badge: 'Ưu tiên', icon: CheckCircle2 },
