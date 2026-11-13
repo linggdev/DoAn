@@ -6,11 +6,15 @@ import {
   Check,
   CheckCircle2,
   CheckSquare,
+  Copy,
   Database,
   Download,
   Edit3,
+  ExternalLink,
   Eye,
   FileSpreadsheet,
+  Filter,
+  Info,
   KeyRound,
   Lock,
   Plus,
@@ -162,6 +166,134 @@ const SYSTEM_POLICIES = [
   },
 ];
 
+const SSMS_TABLES: {
+  name: string;
+  tableName: string;
+  desc: string;
+  pk: string;
+  fks: string[];
+  module: 'IAM' | 'ORG' | 'RECRUITMENT' | 'PIPELINE' | 'EVALUATION' | 'SYSTEM';
+  key: string;
+}[] = [
+  {
+    name: 'Phòng ban Doanh nghiệp',
+    tableName: 'dbo.departments',
+    desc: 'Cơ cấu phòng ban nội bộ, chỉ định Trưởng bộ phận (Hiring Manager).',
+    pk: 'department_id (PK, INT IDENTITY)',
+    fks: ['manager_id -> users(user_id) [NULLABLE phá vòng lặp FK]'],
+    module: 'ORG',
+    key: 'departments',
+  },
+  {
+    name: 'Tài khoản & Định danh IAM',
+    tableName: 'dbo.users',
+    desc: 'Tài khoản người dùng, email duy nhất (UQ), mật khẩu băm và 5 Role RBAC.',
+    pk: 'user_id (PK, INT IDENTITY)',
+    fks: ['department_id -> departments(department_id)'],
+    module: 'IAM',
+    key: 'users',
+  },
+  {
+    name: 'Yêu cầu Định biên Tuyển dụng',
+    tableName: 'dbo.job_requisitions',
+    desc: 'Phiếu đề xuất chỉ tiêu định biên nhân sự, ngân sách lương và phê duyệt.',
+    pk: 'requisition_id (PK, INT IDENTITY)',
+    fks: ['department_id -> departments', 'requested_by -> users'],
+    module: 'RECRUITMENT',
+    key: 'requisitions',
+  },
+  {
+    name: 'Tin Tuyển dụng & Vị trí Mở',
+    tableName: 'dbo.jobs',
+    desc: 'Vị trí tuyển dụng chính thức, trạng thái PUBLISHED/CLOSED, ngưỡng điểm đạt.',
+    pk: 'job_id (PK, INT IDENTITY)',
+    fks: ['requisition_id -> job_requisitions', 'department_id -> departments'],
+    module: 'RECRUITMENT',
+    key: 'jobs',
+  },
+  {
+    name: 'Cấu hình Vòng Quy trình FSM',
+    tableName: 'dbo.job_stages',
+    desc: 'Các vòng tuyển dụng theo Finite State Machine (4 vòng bắt buộc, 2 vòng tùy chọn).',
+    pk: 'stage_id (PK, INT IDENTITY)',
+    fks: ['job_id -> jobs(job_id)'],
+    module: 'PIPELINE',
+    key: 'stages',
+  },
+  {
+    name: 'Barem Tiêu chí & Trọng số',
+    tableName: 'dbo.evaluation_criteria',
+    desc: 'Tiêu chí đánh giá ứng viên, trọng số phần trăm (∑w = 100%) và cờ Điểm liệt.',
+    pk: 'criterion_id (PK, INT IDENTITY)',
+    fks: ['job_id -> jobs(job_id)'],
+    module: 'EVALUATION',
+    key: 'criteria',
+  },
+  {
+    name: 'Hồ sơ Ứng viên Tuyển dụng',
+    tableName: 'dbo.candidates',
+    desc: 'Thông tin ứng viên, vòng hiện tại, token Magic Link và đề xuất mức lương Offer.',
+    pk: 'candidate_id (PK, INT IDENTITY)',
+    fks: ['job_id -> jobs', 'offer_approved_by -> users'],
+    module: 'PIPELINE',
+    key: 'candidates',
+  },
+  {
+    name: 'Nhật ký Chuyển vòng Bất biến',
+    tableName: 'dbo.candidate_stage_logs',
+    desc: 'Truy vết toàn bộ lịch sử kéo thả Kanban và lý do từ chối (REJECTED).',
+    pk: 'log_id (PK, INT IDENTITY)',
+    fks: ['candidate_id -> candidates', 'actor_id -> users'],
+    module: 'PIPELINE',
+    key: 'stageLogs',
+  },
+  {
+    name: 'Phân công Hội đồng Phỏng vấn',
+    tableName: 'dbo.interview_panels',
+    desc: 'Danh sách giám khảo được gán phỏng vấn ứng viên, ngày giờ & link họp Meet.',
+    pk: 'panel_id (PK, INT IDENTITY)',
+    fks: ['candidate_id -> candidates', 'interviewer_id -> users'],
+    module: 'EVALUATION',
+    key: 'panels',
+  },
+  {
+    name: 'Phiếu Chấm Điểm Tổng Hợp',
+    tableName: 'dbo.scorecards',
+    desc: 'Phiếu chấm điểm độc lập của từng giám khảo (Blind Evaluation Lock Protocol).',
+    pk: 'scorecard_id (PK, INT IDENTITY)',
+    fks: ['candidate_id -> candidates', 'interviewer_id -> users'],
+    module: 'EVALUATION',
+    key: 'scorecards',
+  },
+  {
+    name: 'Chi tiết Điểm số Tiêu chí',
+    tableName: 'dbo.scorecard_items',
+    desc: 'Điểm từng tiêu chí thang 1-5, nhận xét chuyên môn và cảnh báo điểm liệt.',
+    pk: 'item_id (PK, INT IDENTITY)',
+    fks: ['scorecard_id -> scorecards', 'criterion_id -> evaluation_criteria'],
+    module: 'EVALUATION',
+    key: 'scorecardItems',
+  },
+  {
+    name: 'Hộp thư Thông báo Tự động',
+    tableName: 'dbo.system_email_outbox',
+    desc: 'Nhật ký email hệ thống gửi ứng viên và giám khảo kèm file lịch phỏng vấn .ics.',
+    pk: 'outbox_id (PK, INT IDENTITY)',
+    fks: ['candidate_id -> candidates'],
+    module: 'SYSTEM',
+    key: 'emailOutbox',
+  },
+  {
+    name: 'Nhật ký Kiểm toán Hệ thống ACID',
+    tableName: 'dbo.audit_trail_logs',
+    desc: 'Lưu vết mọi hành động quản trị, bảo mật và thay đổi dữ liệu nhạy cảm.',
+    pk: 'audit_id (PK, INT IDENTITY)',
+    fks: ['actor_id -> users'],
+    module: 'SYSTEM',
+    key: 'auditLogs',
+  },
+];
+
 export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
   activeSection,
   onSelectSection,
@@ -182,6 +314,8 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
   const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
   const [healthCheckOpen, setHealthCheckOpen] = useState(false);
+  const [dbSchemaModalOpen, setDbSchemaModalOpen] = useState(false);
+  const [deleteConfirmUser, setDeleteConfirmUser] = useState<AccountUser | null>(null);
 
   const [newUserName, setNewUserName] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
@@ -190,10 +324,13 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
   const [newUserRole, setNewUserRole] = useState<UserRole>('HR');
   const [newUserDept, setNewUserDept] = useState('People & Talent');
 
-  const [editingUserId, setEditingUserId] = useState<number | null>(null);
+  const [editingUser, setEditingUser] = useState<AccountUser | null>(null);
   const [editUserName, setEditUserName] = useState('');
   const [editUserPhone, setEditUserPhone] = useState('');
   const [editUserPassword, setEditUserPassword] = useState('');
+  const [editUserRole, setEditUserRole] = useState<UserRole>('HR');
+  const [editUserDept, setEditUserDept] = useState('People & Talent');
+  const [editUserStatus, setEditUserStatus] = useState<'ACTIVE' | 'INACTIVE'>('ACTIVE');
 
   // ---------------------------------------------------------------------------
   // STATE: DEPARTMENT MANAGEMENT (admin-departments)
@@ -213,6 +350,9 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
   const [govCandidateSearch, setGovCandidateSearch] = useState('');
   const [govStageFilter, setGovStageFilter] = useState<'ALL' | StageCode>('ALL');
   const [govJobFilter, setGovJobFilter] = useState<'ALL' | number>('ALL');
+  const [candidateAlertFilter, setCandidateAlertFilter] = useState<
+    'ALL' | 'KNOCKOUT' | 'VARIANCE' | 'PENDING_OFFER' | 'HIRED'
+  >('ALL');
 
   // ---------------------------------------------------------------------------
   // STATE: AUDIT LOGS & BACKUP (admin-audit)
@@ -223,6 +363,8 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
     'ALL' | 'IAM' | 'PIPELINE' | 'EVAL' | 'JOB'
   >('ALL');
   const [adminBanner, setAdminBanner] = useState<string | null>(null);
+  const [copiedSql, setCopiedSql] = useState(false);
+  const [clearAuditConfirmOpen, setClearAuditConfirmOpen] = useState(false);
 
   // ---------------------------------------------------------------------------
   // COMPUTED METRICS
@@ -306,8 +448,17 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
   const filteredGovCandidates = useMemo(() => {
     const q = govCandidateSearch.trim().toLowerCase();
     return store.candidates.filter((c) => {
+      const job = store.jobs.find((j) => j.id === c.jobId) ?? selectedJob;
       if (govJobFilter !== 'ALL' && c.jobId !== govJobFilter) return false;
       if (govStageFilter !== 'ALL' && c.stageCode !== govStageFilter) return false;
+      if (candidateAlertFilter !== 'ALL') {
+        const m = computeCandidateMetrics(c, job.criteria);
+        if (candidateAlertFilter === 'KNOCKOUT' && !m.isDisqualified) return false;
+        if (candidateAlertFilter === 'VARIANCE' && !m.hasVarianceAlert) return false;
+        if (candidateAlertFilter === 'PENDING_OFFER' && (c.stageCode !== 'OFFER' || c.offerApprovedByHm))
+          return false;
+        if (candidateAlertFilter === 'HIRED' && c.stageCode !== 'HIRED') return false;
+      }
       if (!q) return true;
       return (
         c.fullName.toLowerCase().includes(q) ||
@@ -316,7 +467,15 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
         c.trackingToken.toLowerCase().includes(q)
       );
     });
-  }, [store.candidates, govCandidateSearch, govJobFilter, govStageFilter]);
+  }, [
+    store.candidates,
+    store.jobs,
+    selectedJob,
+    govCandidateSearch,
+    govJobFilter,
+    govStageFilter,
+    candidateAlertFilter,
+  ]);
 
   const filteredAuditLogs = useMemo(() => {
     const q = auditSearch.trim().toLowerCase();
@@ -528,7 +687,15 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setDbSchemaModalOpen(true)}
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-800 transition-colors hover:bg-blue-100"
+              >
+                <Database className="h-3.5 w-3.5 text-blue-600" />
+                Tra Cứu 13 Bảng CSDL SSMS
+              </button>
               <button
                 type="button"
                 onClick={() => setHealthCheckOpen(true)}
@@ -1023,195 +1190,164 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
             </div>
 
             {/* Create User Form */}
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                const normEmail = normalizeEmailInput(newUserEmail);
-                const normPhone = normalizePhoneInput(newUserPhone) || '0909888777';
-                if (!newUserName.trim() || !normEmail || newUserPassword.length < 6) return;
-                if (store.users.some((u) => normalizeEmailInput(u.email) === normEmail)) {
-                  onTriggerViolation({
-                    code: 'USER_EMAIL_TAKEN',
-                    message: `Email "${normEmail}" đã tồn tại trong hệ thống (HTTP 409 — S1.2).`,
-                    candidateName: newUserName.trim(),
-                    fromStageName: 'Admin IAM Create',
-                    toStageName: newUserRole,
-                  });
-                  return;
-                }
-                const created: AccountUser = {
-                  id: Date.now(),
-                  fullName: newUserName.trim(),
-                  email: normEmail,
-                  phone: normPhone,
-                  password: newUserPassword,
-                  role: newUserRole,
-                  department: newUserRole === 'CANDIDATE' ? 'Ứng viên bên ngoài' : newUserDept,
-                  status: 'ACTIVE',
-                };
-                setStore((prev) => ({
-                  ...prev,
-                  users: [...prev.users, created],
-                }));
-                appendAudit(
-                  'ADMIN_CREATE_USER',
-                  `Tạo tài khoản ${created.email} (Role: ${created.role}, Phòng ban: ${created.department})`,
-                );
-                notifyBanner(
-                  `Đã tạo tài khoản "${created.fullName}" (${created.email}) với Role ${created.role}!`,
-                );
-                setNewUserName('');
-                setNewUserEmail('');
-              }}
-              className="mt-4 grid grid-cols-1 gap-2.5 rounded-xl border border-amber-200 bg-amber-50/40 p-3.5 text-xs sm:grid-cols-7"
-            >
-              <input
-                type="text"
-                required
-                value={newUserName}
-                onChange={(e) => setNewUserName(e.target.value)}
-                placeholder="Họ và tên nhân sự..."
-                className="rounded-xl border border-slate-200 bg-white px-3 py-2"
-              />
-              <input
-                type="email"
-                required
-                value={newUserEmail}
-                onChange={(e) => setNewUserEmail(e.target.value)}
-                placeholder="email@ats.local"
-                className="rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono"
-              />
-              <input
-                type="text"
-                required
-                value={newUserPhone}
-                onChange={(e) => setNewUserPhone(e.target.value)}
-                placeholder="Số ĐT (+84/09...)"
-                className="rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono"
-              />
-              <input
-                type="text"
-                required
-                value={newUserPassword}
-                onChange={(e) => setNewUserPassword(e.target.value)}
-                placeholder="Mật khẩu (≥6 ký tự)"
-                className="rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono"
-              />
-              <select
-                value={newUserRole}
-                onChange={(e) => setNewUserRole(e.target.value as UserRole)}
-                className="rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono font-bold"
-              >
-                <option value="HR">HR</option>
-                <option value="HIRING_MANAGER">HIRING_MANAGER</option>
-                <option value="INTERVIEWER">INTERVIEWER</option>
-                <option value="ADMIN">ADMIN</option>
-                <option value="CANDIDATE">CANDIDATE</option>
-              </select>
-              <select
-                value={newUserDept}
-                disabled={newUserRole === 'CANDIDATE'}
-                onChange={(e) => setNewUserDept(e.target.value)}
-                className="rounded-xl border border-slate-200 bg-white px-3 py-2 disabled:opacity-50"
-              >
-                <option value="Executive & IT Governance">Executive & IT Governance</option>
-                <option value="People & Talent">People & Talent</option>
-                {store.departments.map((d) => (
-                  <option key={d.id} value={d.name}>
-                    {d.name}
-                  </option>
-                ))}
-              </select>
-              <button
-                type="submit"
-                className="inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-slate-900 px-3 py-2 font-bold text-white hover:bg-amber-600"
-              >
-                <Plus className="h-3.5 w-3.5" />
-                Tạo Tài Khoản
-              </button>
-            </form>
-
-            {/* Inline Edit User Modal/Drawer when editingUserId is active */}
-            {editingUserId !== null && (
-              <div className="mt-4 rounded-xl border border-blue-200 bg-blue-50/50 p-4 text-xs">
-                <div className="flex items-center justify-between pb-2">
-                  <span className="font-bold text-blue-900">
-                    ✏️ Cập nhật Hồ sơ & Đặt lại Mật khẩu cho tài khoản ID #{editingUserId}
+            <div className="mt-4 rounded-2xl border border-amber-200/90 bg-amber-50/40 p-4 text-xs shadow-2xs">
+              <div className="flex items-center justify-between border-b border-amber-200/60 pb-2.5">
+                <div className="flex items-center gap-2">
+                  <UserPlus className="h-4 w-4 text-amber-700" />
+                  <span className="font-bold text-slate-900">
+                    Cấp Mới Tài Khoản & Gán Quyền Truy Cập (IAM Provisioning)
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => setEditingUserId(null)}
-                    className="font-semibold text-slate-500 hover:text-slate-800"
-                  >
-                    Hủy
-                  </button>
                 </div>
-                <div className="grid grid-cols-1 gap-3 sm:grid-cols-4">
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-600">Họ và tên</label>
-                    <input
-                      type="text"
-                      value={editUserName}
-                      onChange={(e) => setEditUserName(e.target.value)}
-                      className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-600">
-                      Số điện thoại (chuẩn hóa D01)
-                    </label>
-                    <input
-                      type="text"
-                      value={editUserPhone}
-                      onChange={(e) => setEditUserPhone(e.target.value)}
-                      className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 font-mono"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-600">
-                      Mật khẩu mới (≥ 6 ký tự)
-                    </label>
-                    <input
-                      type="text"
-                      value={editUserPassword}
-                      onChange={(e) => setEditUserPassword(e.target.value)}
-                      className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-1.5 font-mono"
-                    />
-                  </div>
-                  <div className="flex items-end">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!editUserName.trim() || editUserPassword.length < 6) return;
-                        const normPhone = normalizePhoneInput(editUserPhone) || editUserPhone;
-                        setStore((prev) => ({
-                          ...prev,
-                          users: prev.users.map((u) =>
-                            u.id === editingUserId
-                              ? {
-                                  ...u,
-                                  fullName: editUserName.trim(),
-                                  phone: normPhone,
-                                  password: editUserPassword,
-                                }
-                              : u,
-                          ),
-                        }));
-                        appendAudit(
-                          'ADMIN_UPDATE_USER',
-                          `Cập nhật thông tin & mật khẩu cho user #${editingUserId} (${editUserName.trim()})`,
-                        );
-                        notifyBanner('Đã lưu thông tin và mật khẩu mới cho tài khoản!');
-                        setEditingUserId(null);
-                      }}
-                      className="w-full cursor-pointer rounded-lg bg-blue-600 py-2 font-bold text-white hover:bg-blue-700"
-                    >
-                      Lưu Thay Đổi
-                    </button>
-                  </div>
-                </div>
+                <span className="text-[11px] text-slate-500">
+                  Mật khẩu mặc định: <code className="font-bold text-slate-700">Password@123</code>
+                </span>
               </div>
-            )}
+
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  const normEmail = normalizeEmailInput(newUserEmail);
+                  const normPhone = normalizePhoneInput(newUserPhone) || '0909888777';
+                  if (!newUserName.trim() || !normEmail || newUserPassword.length < 6) return;
+                  if (store.users.some((u) => normalizeEmailInput(u.email) === normEmail)) {
+                    onTriggerViolation({
+                      code: 'USER_EMAIL_TAKEN',
+                      message: `Email "${normEmail}" đã tồn tại trong hệ thống (HTTP 409 — S1.2).`,
+                      candidateName: newUserName.trim(),
+                      fromStageName: 'Admin IAM Create',
+                      toStageName: newUserRole,
+                    });
+                    return;
+                  }
+                  const created: AccountUser = {
+                    id: Date.now(),
+                    fullName: newUserName.trim(),
+                    email: normEmail,
+                    phone: normPhone,
+                    password: newUserPassword,
+                    role: newUserRole,
+                    department: newUserRole === 'CANDIDATE' ? 'Ứng viên bên ngoài' : newUserDept,
+                    status: 'ACTIVE',
+                  };
+                  setStore((prev) => ({
+                    ...prev,
+                    users: [...prev.users, created],
+                  }));
+                  appendAudit(
+                    'ADMIN_CREATE_USER',
+                    `Tạo tài khoản ${created.email} (Role: ${created.role}, Phòng ban: ${created.department})`,
+                  );
+                  notifyBanner(
+                    `Đã tạo tài khoản "${created.fullName}" (${created.email}) với Role ${created.role}!`,
+                  );
+                  setNewUserName('');
+                  setNewUserEmail('');
+                }}
+                className="mt-3.5 space-y-3"
+              >
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700">
+                      Họ và tên nhân sự <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={newUserName}
+                      onChange={(e) => setNewUserName(e.target.value)}
+                      placeholder="Ví dụ: Nguyễn Văn A"
+                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs text-slate-900 focus:border-amber-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700">
+                      Email đăng nhập <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      required
+                      value={newUserEmail}
+                      onChange={(e) => setNewUserEmail(e.target.value)}
+                      placeholder="user@ats.local"
+                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono text-xs text-slate-900 focus:border-amber-500 focus:outline-none"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700">
+                      Số điện thoại liên hệ
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={newUserPhone}
+                      onChange={(e) => setNewUserPhone(e.target.value)}
+                      placeholder="0909888777"
+                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono text-xs text-slate-900 focus:border-amber-500 focus:outline-none"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700">
+                      Vai trò được cấp (RBAC Role) <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      value={newUserRole}
+                      onChange={(e) => setNewUserRole(e.target.value as UserRole)}
+                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono text-xs font-bold text-slate-800 focus:border-amber-500 focus:outline-none"
+                    >
+                      <option value="HR">HR (Chuyên viên Tuyển dụng)</option>
+                      <option value="HIRING_MANAGER">HIRING_MANAGER (Trưởng bộ phận)</option>
+                      <option value="INTERVIEWER">INTERVIEWER (Giám khảo)</option>
+                      <option value="ADMIN">ADMIN (Quản trị viên)</option>
+                      <option value="CANDIDATE">CANDIDATE (Ứng viên)</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700">
+                      Phòng ban trực thuộc
+                    </label>
+                    <select
+                      value={newUserDept}
+                      disabled={newUserRole === 'CANDIDATE'}
+                      onChange={(e) => setNewUserDept(e.target.value)}
+                      className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-800 disabled:opacity-50 focus:border-amber-500 focus:outline-none"
+                    >
+                      <option value="Executive & IT Governance">Executive & IT Governance</option>
+                      <option value="People & Talent">People & Talent</option>
+                      {store.departments.map((d) => (
+                        <option key={d.id} value={d.name}>
+                          {d.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-[11px] font-bold text-slate-700">
+                      Mật khẩu khởi tạo
+                    </label>
+                    <div className="mt-1 flex items-center gap-2">
+                      <input
+                        type="text"
+                        required
+                        value={newUserPassword}
+                        onChange={(e) => setNewUserPassword(e.target.value)}
+                        placeholder="Mật khẩu (≥ 6 ký tự)"
+                        className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono text-xs focus:border-amber-500 focus:outline-none"
+                      />
+                      <button
+                        type="submit"
+                        className="inline-flex shrink-0 cursor-pointer items-center justify-center gap-1.5 rounded-xl bg-slate-900 px-4 py-2 font-bold text-white shadow-xs hover:bg-amber-600"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        Tạo User
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </form>
+            </div>
 
             {/* User Table */}
             {selectedUserIds.length > 0 && (
@@ -1481,10 +1617,13 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                             <button
                               type="button"
                               onClick={() => {
-                                setEditingUserId(u.id);
+                                setEditingUser(u);
                                 setEditUserName(u.fullName);
                                 setEditUserPhone(u.phone);
                                 setEditUserPassword(u.password);
+                                setEditUserRole(u.role);
+                                setEditUserDept(u.department);
+                                setEditUserStatus(u.status);
                               }}
                               className="inline-flex cursor-pointer items-center gap-1 rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 hover:bg-slate-100"
                             >
@@ -1528,18 +1667,24 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                                 <button
                                   type="button"
                                   onClick={() => {
-                                    setStore((prev) => ({
-                                      ...prev,
-                                      users: prev.users.filter((item) => item.id !== u.id),
-                                    }));
-                                    appendAudit(
-                                      'ADMIN_DELETE_USER',
-                                      `Xóa tài khoản ${u.email} (${u.role}) khỏi hệ thống`,
+                                    const managesDept = store.departments.find(
+                                      (d) =>
+                                        d.managerName.toLowerCase() === u.fullName.toLowerCase(),
                                     );
-                                    notifyBanner(`Đã xóa tài khoản ${u.email}.`);
+                                    if (managesDept) {
+                                      onTriggerViolation({
+                                        code: 'USER_IS_DEPT_MANAGER',
+                                        message: `Không thể xóa "${u.fullName}" vì đang là Trưởng bộ phận của phòng ban "${managesDept.name}". Hãy điều chuyển chức vụ Trưởng bộ phận trước khi xóa!`,
+                                        candidateName: u.fullName,
+                                        fromStageName: 'Department Manager',
+                                        toStageName: 'Delete User',
+                                      });
+                                      return;
+                                    }
+                                    setDeleteConfirmUser(u);
                                   }}
                                   className="cursor-pointer rounded-lg border border-red-200 bg-red-50/70 p-1 text-red-600 hover:bg-red-100"
-                                  title="Xóa tài khoản"
+                                  title="Xóa tài khoản an toàn"
                                 >
                                   <Trash2 className="h-3.5 w-3.5" />
                                 </button>
@@ -2085,9 +2230,32 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                       value={govCandidateSearch}
                       onChange={(e) => setGovCandidateSearch(e.target.value)}
                       placeholder="Tìm tên, email, SĐT, mã token..."
-                      className="w-60 rounded-xl border border-slate-200 bg-slate-50 py-1.5 pr-3 pl-8 text-xs"
+                      className="w-60 rounded-xl border border-slate-200 bg-slate-50 py-1.5 pr-3 pl-8 text-xs focus:border-amber-500 focus:bg-white focus:outline-none"
                     />
                   </div>
+
+                  <select
+                    value={candidateAlertFilter}
+                    onChange={(e) =>
+                      setCandidateAlertFilter(
+                        e.target.value as
+                          | 'ALL'
+                          | 'KNOCKOUT'
+                          | 'VARIANCE'
+                          | 'PENDING_OFFER'
+                          | 'HIRED',
+                      )
+                    }
+                    className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-bold text-slate-700"
+                  >
+                    <option value="ALL">Mọi trạng thái cảnh báo</option>
+                    <option value="PENDING_OFFER">
+                      Chờ duyệt Offer ({pendingGlobalOffers.length})
+                    </option>
+                    <option value="KNOCKOUT">Cảnh báo Điểm liệt (Knockout)</option>
+                    <option value="VARIANCE">Lệch điểm hội đồng (Δ ≥ 2.0)</option>
+                    <option value="HIRED">Đã trúng tuyển (HIRED)</option>
+                  </select>
 
                   <select
                     value={govJobFilter}
@@ -2413,6 +2581,16 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                   <Download className="h-3.5 w-3.5" />
                   Xuất Audit (.CSV)
                 </button>
+
+                <button
+                  type="button"
+                  onClick={() => setClearAuditConfirmOpen(true)}
+                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-red-200 bg-red-50/80 px-3 py-1.5 text-xs font-bold text-red-700 hover:bg-red-100"
+                  title="Xóa trắng nhật ký và tạo phiên mới"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Xóa Lịch Sử
+                </button>
               </div>
             </div>
 
@@ -2596,6 +2774,458 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                   Hoàn Tất
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================================
+          MODAL: SQL SERVER 13-TABLE DATABASE SCHEMA INSPECTOR
+         ===================================================================== */}
+      {dbSchemaModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
+          <div className="relative flex max-h-[85vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+            {/* Header */}
+            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-900 px-6 py-4 text-white">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/20 text-blue-400">
+                  <Database className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">
+                    Kiến Trúc 13 Bảng Cơ Sở Dữ Liệu SQL Server (ATS_Enterprise_DB)
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Kịch bản T-SQL 3NF, ràng buộc toàn vẹn khóa ngoại (FK) & dữ liệu mẫu đồng bộ SSMS
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setDbSchemaModalOpen(false)}
+                className="cursor-pointer rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            {/* Sub-header info bar */}
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 bg-slate-50 px-6 py-3 text-xs">
+              <div className="flex items-center gap-3 text-slate-600">
+                <span>
+                  Máy chủ: <code className="font-bold text-slate-900">localhost:1433</code>
+                </span>
+                <span>•</span>
+                <span>
+                  CSDL: <code className="font-bold text-emerald-700">ATS_Enterprise_DB</code>
+                </span>
+                <span>•</span>
+                <span>
+                  Tổng số bảng: <strong className="text-slate-900">13 Bảng thực thể</strong>
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  const sql = `USE ATS_Enterprise_DB;\nSELECT 'departments' AS TableName, COUNT(*) AS TotalRows FROM departments\nUNION ALL SELECT 'users', COUNT(*) FROM users\nUNION ALL SELECT 'job_requisitions', COUNT(*) FROM job_requisitions\nUNION ALL SELECT 'jobs', COUNT(*) FROM jobs\nUNION ALL SELECT 'job_stages', COUNT(*) FROM job_stages\nUNION ALL SELECT 'evaluation_criteria', COUNT(*) FROM evaluation_criteria\nUNION ALL SELECT 'candidates', COUNT(*) FROM candidates\nUNION ALL SELECT 'candidate_stage_logs', COUNT(*) FROM candidate_stage_logs\nUNION ALL SELECT 'interview_panels', COUNT(*) FROM interview_panels\nUNION ALL SELECT 'scorecards', COUNT(*) FROM scorecards\nUNION ALL SELECT 'scorecard_items', COUNT(*) FROM scorecard_items\nUNION ALL SELECT 'system_email_outbox', COUNT(*) FROM system_email_outbox\nUNION ALL SELECT 'audit_trail_logs', COUNT(*) FROM audit_trail_logs;`;
+                  navigator.clipboard.writeText(sql);
+                  setCopiedSql(true);
+                  setTimeout(() => setCopiedSql(false), 2000);
+                  notifyBanner('Đã sao chép Query T-SQL kiểm tra 13 bảng vào Clipboard!');
+                }}
+                className="inline-flex cursor-pointer items-center gap-1.5 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1 font-bold text-blue-700 hover:bg-blue-100"
+              >
+                {copiedSql ? (
+                  <Check className="h-3.5 w-3.5 text-emerald-600" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5" />
+                )}
+                {copiedSql ? 'Đã sao chép T-SQL!' : 'Sao chép Query T-SQL đếm dòng'}
+              </button>
+            </div>
+
+            {/* Body */}
+            <div className="flex-1 space-y-3 overflow-y-auto p-6">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                {SSMS_TABLES.map((t) => {
+                  const rowCount =
+                    t.key === 'departments'
+                      ? store.departments.length
+                      : t.key === 'users'
+                        ? store.users.length
+                        : t.key === 'requisitions'
+                          ? store.requisitions.length
+                          : t.key === 'jobs'
+                            ? store.jobs.length
+                            : t.key === 'stages'
+                              ? store.jobs.reduce((acc, j) => acc + j.stages.length, 0)
+                              : t.key === 'criteria'
+                                ? store.jobs.reduce((acc, j) => acc + j.criteria.length, 0)
+                                : t.key === 'candidates'
+                                  ? store.candidates.length
+                                  : t.key === 'stageLogs'
+                                    ? store.candidates.reduce((acc, c) => acc + c.logs.length, 0)
+                                    : t.key === 'panels'
+                                      ? store.candidates.reduce(
+                                          (acc, c) => acc + c.sheets.length,
+                                          0,
+                                        )
+                                      : t.key === 'scorecards'
+                                        ? store.candidates.reduce(
+                                            (acc, c) => acc + c.sheets.length,
+                                            0,
+                                          )
+                                        : t.key === 'scorecardItems'
+                                          ? store.candidates.reduce(
+                                              (acc, c) =>
+                                                acc +
+                                                c.sheets.reduce(
+                                                  (s, sh) =>
+                                                    s + Object.keys(sh.scores).length,
+                                                  0,
+                                                ),
+                                              0,
+                                            )
+                                          : t.key === 'emailOutbox'
+                                            ? store.emailOutbox.length
+                                            : store.auditLogs.length;
+
+                  return (
+                    <div
+                      key={t.tableName}
+                      className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-xs"
+                    >
+                      <div>
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <code className="font-mono font-extrabold text-blue-900">
+                              {t.tableName}
+                            </code>
+                            <span className="rounded bg-slate-200 px-1.5 py-0.2 font-mono text-[9px] font-bold text-slate-700">
+                              {t.module}
+                            </span>
+                          </div>
+                          <span className="font-mono font-bold text-emerald-700">
+                            {rowCount} bản ghi
+                          </span>
+                        </div>
+                        <p className="mt-1 font-semibold text-slate-800">{t.name}</p>
+                        <p className="mt-0.5 text-[11px] leading-relaxed text-slate-500">{t.desc}</p>
+                      </div>
+
+                      <div className="mt-3 space-y-0.5 border-t border-slate-200/80 pt-2 font-mono text-[10px] text-slate-600">
+                        <div>
+                          <strong className="text-amber-800">PK:</strong> {t.pk}
+                        </div>
+                        <div>
+                          <strong className="text-indigo-800">FK:</strong> {t.fks.join(', ')}
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex items-center justify-between border-t border-slate-100 bg-slate-50 px-6 py-3.5 text-xs">
+              <span className="text-[11px] text-slate-500">
+                Tệp kịch bản T-SQL đầy đủ nằm tại:{' '}
+                <code className="font-bold">docs/setup_database_ssms.sql</code>
+              </span>
+              <button
+                type="button"
+                onClick={() => setDbSchemaModalOpen(false)}
+                className="cursor-pointer rounded-xl bg-slate-900 px-4 py-1.5 font-bold text-white hover:bg-slate-800"
+              >
+                Đóng
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================================
+          MODAL: EDIT USER & IAM PROFILE
+         ===================================================================== */}
+      {editingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
+          <div className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-900 px-6 py-4 text-white">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/20 text-amber-400">
+                  <KeyRound className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">
+                    Cập Nhật Hồ Sơ & Phân Quyền Tài Khoản #{editingUser.id}
+                  </h3>
+                  <p className="text-xs text-slate-400">{editingUser.email}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingUser(null)}
+                className="cursor-pointer rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!editUserName.trim() || editUserPassword.length < 6) return;
+                const normPhone = normalizePhoneInput(editUserPhone) || editUserPhone;
+                setStore((prev) => ({
+                  ...prev,
+                  users: prev.users.map((u) =>
+                    u.id === editingUser.id
+                      ? {
+                          ...u,
+                          fullName: editUserName.trim(),
+                          phone: normPhone,
+                          password: editUserPassword,
+                          role: editUserRole,
+                          department: editUserDept,
+                          status: editUserStatus,
+                        }
+                      : u,
+                  ),
+                }));
+                appendAudit(
+                  'ADMIN_UPDATE_USER_PROFILE',
+                  `Admin cập nhật toàn diện tài khoản ${editingUser.email}: Role=${editUserRole}, Dept=${editUserDept}, Status=${editUserStatus}`,
+                );
+                notifyBanner(`Đã cập nhật hồ sơ tài khoản ${editingUser.email}!`);
+                setEditingUser(null);
+              }}
+              className="space-y-3.5 p-6 text-xs"
+            >
+              <div>
+                <label className="block font-bold text-slate-700">Họ và tên nhân sự</label>
+                <input
+                  type="text"
+                  required
+                  value={editUserName}
+                  onChange={(e) => setEditUserName(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 text-xs font-semibold focus:border-amber-500 focus:outline-none"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700">Email (Định danh cố định)</label>
+                  <input
+                    type="email"
+                    readOnly
+                    value={editingUser.email}
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 font-mono text-slate-500"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700">Số điện thoại liên hệ</label>
+                  <input
+                    type="text"
+                    required
+                    value={editUserPhone}
+                    onChange={(e) => setEditUserPhone(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono text-xs focus:border-amber-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700">Vai trò (RBAC Role)</label>
+                  <select
+                    value={editUserRole}
+                    disabled={editingUser.id === currentUser.id}
+                    onChange={(e) => setEditUserRole(e.target.value as UserRole)}
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono text-xs font-bold disabled:opacity-50"
+                  >
+                    <option value="ADMIN">ADMIN</option>
+                    <option value="HIRING_MANAGER">HIRING_MANAGER</option>
+                    <option value="HR">HR</option>
+                    <option value="INTERVIEWER">INTERVIEWER</option>
+                    <option value="CANDIDATE">CANDIDATE</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700">Phòng ban</label>
+                  <select
+                    value={editUserDept}
+                    disabled={editUserRole === 'CANDIDATE'}
+                    onChange={(e) => setEditUserDept(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs disabled:opacity-50"
+                  >
+                    <option value="Executive & IT Governance">Executive & IT Governance</option>
+                    <option value="People & Talent">People & Talent</option>
+                    <option value="Ứng viên bên ngoài">Ứng viên bên ngoài</option>
+                    {store.departments.map((d) => (
+                      <option key={d.id} value={d.name}>
+                        {d.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700">Trạng thái tài khoản</label>
+                  <select
+                    value={editUserStatus}
+                    disabled={editingUser.id === currentUser.id}
+                    onChange={(e) => setEditUserStatus(e.target.value as 'ACTIVE' | 'INACTIVE')}
+                    className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs font-bold disabled:opacity-50"
+                  >
+                    <option value="ACTIVE">ACTIVE (Đang hoạt động)</option>
+                    <option value="INACTIVE">INACTIVE (Đã khóa)</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700">Mật khẩu mới (≥ 6 ký tự)</label>
+                  <input
+                    type="text"
+                    required
+                    minLength={6}
+                    value={editUserPassword}
+                    onChange={(e) => setEditUserPassword(e.target.value)}
+                    className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 font-mono text-xs focus:border-amber-500 focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 border-t border-slate-100 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setEditingUser(null)}
+                  className="cursor-pointer rounded-xl border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="cursor-pointer rounded-xl bg-blue-600 px-5 py-2 font-bold text-white shadow-xs hover:bg-blue-700"
+                >
+                  Lưu Thay Đổi
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================================
+          MODAL: DELETE USER CONFIRMATION
+         ===================================================================== */}
+      {deleteConfirmUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
+          <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-red-200 bg-white p-6 shadow-2xl">
+            <div className="flex items-center gap-3 text-red-600">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-red-100 text-red-600">
+                <AlertTriangle className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Xác Nhận Xóa Tài Khoản</h3>
+                <p className="text-xs text-slate-500">Hành động này không thể hoàn tác</p>
+              </div>
+            </div>
+
+            <p className="mt-4 text-xs leading-relaxed text-slate-600">
+              Bạn có chắc chắn muốn xóa tài khoản của{' '}
+              <strong className="text-slate-900">{deleteConfirmUser.fullName}</strong> (
+              <code className="font-mono text-slate-700">{deleteConfirmUser.email}</code>) với vai trò{' '}
+              <span className="font-mono font-bold text-amber-800">[{deleteConfirmUser.role}]</span>?
+              Toàn bộ thao tác xóa sẽ được ghi nhận vào nhật ký kiểm toán hệ thống.
+            </p>
+
+            <div className="mt-6 flex items-center justify-end gap-2 border-t border-slate-100 pt-4 text-xs">
+              <button
+                type="button"
+                onClick={() => setDeleteConfirmUser(null)}
+                className="cursor-pointer rounded-xl border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setStore((prev) => ({
+                    ...prev,
+                    users: prev.users.filter((item) => item.id !== deleteConfirmUser.id),
+                  }));
+                  appendAudit(
+                    'ADMIN_DELETE_USER',
+                    `Xóa tài khoản ${deleteConfirmUser.email} (${deleteConfirmUser.role}) khỏi hệ thống`,
+                  );
+                  notifyBanner(`Đã xóa vĩnh viễn tài khoản ${deleteConfirmUser.email}.`);
+                  setDeleteConfirmUser(null);
+                }}
+                className="cursor-pointer rounded-xl bg-red-600 px-4 py-2 font-bold text-white hover:bg-red-700"
+              >
+                Xác Nhận Xóa
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================================
+          MODAL: CLEAR AUDIT LOGS CONFIRMATION
+         ===================================================================== */}
+      {clearAuditConfirmOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
+          <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
+            <div className="flex items-center gap-3 text-amber-600">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-100 text-amber-600">
+                <Trash2 className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Khởi Tạo Lại Nhật Ký Kiểm Toán</h3>
+                <p className="text-xs text-slate-500">Dọn dẹp lịch sử và mở phiên kiểm toán mới</p>
+              </div>
+            </div>
+
+            <p className="mt-4 text-xs leading-relaxed text-slate-600">
+              Bạn có chắc chắn muốn xóa {store.auditLogs.length} bản ghi lịch sử kiểm toán hiện tại?
+              Hệ thống sẽ dọn dẹp các sự kiện cũ và ghi nhận một bản ghi khởi tạo phiên kiểm toán mới
+              do <strong>{currentUser.fullName}</strong> thực hiện.
+            </p>
+
+            <div className="mt-6 flex items-center justify-end gap-2 border-t border-slate-100 pt-4 text-xs">
+              <button
+                type="button"
+                onClick={() => setClearAuditConfirmOpen(false)}
+                className="cursor-pointer rounded-xl border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const nowTs = new Date().toISOString().slice(0, 19).replace('T', ' ');
+                  setStore((prev) => ({
+                    ...prev,
+                    auditLogs: [
+                      {
+                        id: Date.now(),
+                        time: nowTs,
+                        actorName: currentUser.fullName,
+                        actorRole: currentUser.role,
+                        action: 'ADMIN_CLEAR_AUDIT_LOGS',
+                        detail: `Admin khởi tạo phiên kiểm toán mới và dọn dẹp ${prev.auditLogs.length} bản ghi cũ.`,
+                      },
+                    ],
+                  }));
+                  notifyBanner('Đã khởi tạo phiên nhật ký kiểm toán mới thành công!');
+                  setClearAuditConfirmOpen(false);
+                }}
+                className="cursor-pointer rounded-xl bg-amber-600 px-4 py-2 font-bold text-white hover:bg-amber-700"
+              >
+                Xác Nhận Dọn Dẹp
+              </button>
             </div>
           </div>
         </div>
