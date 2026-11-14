@@ -1,11 +1,15 @@
- import {
+import {
   Activity,
   AlertTriangle,
+  ArrowRight,
+  ArrowUpRight,
   Award,
+  Briefcase,
   Building2,
   Check,
   CheckCircle2,
   CheckSquare,
+  Clock,
   Copy,
   Database,
   Download,
@@ -17,6 +21,7 @@
   Filter,
   Info,
   KeyRound,
+  Layers,
   Lock,
   Plus,
   RefreshCw,
@@ -30,12 +35,14 @@
   Square,
   Terminal,
   Trash2,
+  TrendingUp,
   Unlock,
   Upload,
   UserCheck,
   UserPlus,
   Users,
   X,
+  Zap,
 } from 'lucide-react';
 import React, { useMemo, useState } from 'react';
 import { ROLE_META, UserRole } from '@/components/animate-ui/animated-sidebar';
@@ -357,6 +364,8 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
   const [editDeptManager, setEditDeptManager] = useState('');
   const [deleteConfirmDept, setDeleteConfirmDept] = useState<{ id: number; name: string } | null>(null);
   const [isSyncingDb, setIsSyncingDb] = useState(false);
+  const [overviewRbacTab, setOverviewRbacTab] = useState<'INSPECTOR' | 'MATRIX'>('INSPECTOR');
+  const [overviewSelectedRole, setOverviewSelectedRole] = useState<UserRole>('ADMIN');
 
   // ---------------------------------------------------------------------------
   // STATE: GOVERNANCE & CANDIDATE OVERSIGHT (admin-governance)
@@ -661,136 +670,145 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
       )}
 
       {/* =====================================================================
-          TAB 1: ADMIN OVERVIEW & 5-ROLE RBAC MATRIX (admin-overview)
+          TAB 1: ADMIN EXECUTIVE COMMAND DASHBOARD & GOVERNANCE PULSE (admin-overview)
          ===================================================================== */}
       {activeSection === 'admin-overview' && (
-        <div className="space-y-5">
-          {/* Hero Command Banner */}
-          <div className="relative overflow-hidden rounded-2xl border border-amber-200/90 bg-gradient-to-r from-amber-500/15 via-amber-50/60 to-white p-6 text-slate-900 shadow-xs">
-            <div className="flex flex-col gap-3.5">
-              <div>
-                <span className="inline-flex items-center gap-1.5 rounded-lg border border-amber-300 bg-amber-100 px-2.5 py-1 font-mono text-[10px] font-bold text-amber-900 uppercase">
-                  <ShieldCheck className="h-3.5 w-3.5 text-amber-700" />
-                  SYSTEM GOVERNANCE & RBAC COMMAND CENTER
-                </span>
-                <h2 className="mt-2 text-xl font-extrabold tracking-tight text-slate-900">
-                  Trung Tâm Chỉ Huy Quản Trị Hệ Thống ATS Doanh Nghiệp
-                </h2>
-                <p className="mt-1 max-w-2xl text-xs text-slate-600">
-                  Giám sát toàn diện 5 cổng phân quyền độc lập (Strict 5-Role Isolation), định biên
-                  nhân sự các phòng ban, trạng thái Barem chấm điểm, tiến độ hội đồng phỏng vấn và
-                  nhật ký kiểm toán bất biến.
+        <div className="space-y-6">
+          {/* 1. HERO COMMAND CENTER & LIVE INFRASTRUCTURE PULSE */}
+          <div className="relative overflow-hidden rounded-3xl border border-slate-200/90 bg-gradient-to-br from-white via-amber-50/25 to-slate-50/60 p-6 shadow-xs">
+            {/* Ambient decorative glow */}
+            <div className="pointer-events-none absolute -right-16 -top-16 h-64 w-64 rounded-full bg-amber-400/10 blur-3xl" />
+            <div className="pointer-events-none absolute -left-16 -bottom-16 h-64 w-64 rounded-full bg-blue-400/10 blur-3xl" />
+
+            <div className="relative flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+              <div className="space-y-2">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 rounded-xl border border-amber-300 bg-amber-100/80 px-3 py-1 font-mono text-[10px] font-extrabold text-amber-950 uppercase tracking-wide">
+                    <ShieldCheck className="h-3.5 w-3.5 text-amber-700" />
+                    SYSTEM GOVERNANCE & RBAC COMMAND CENTER
+                  </span>
+
+                  <span className="inline-flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-1 font-mono text-[10px] font-bold text-emerald-800">
+                    <span className="relative flex h-2 w-2">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
+                      <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+                    </span>
+                    Dual-Sync SQL Server 1433 Active
+                  </span>
+
+                  <span className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white/80 px-2.5 py-1 text-[10px] font-semibold text-slate-600">
+                    <Database className="h-3 w-3 text-blue-600" />
+                    13 Bảng SSMS Sẵn Sàng
+                  </span>
+                </div>
+
+                <h1 className="text-xl font-extrabold tracking-tight text-slate-900 sm:text-2xl">
+                  Bảng Điều Khiển Quản Trị Hệ Thống Tuyển Dụng Doanh Nghiệp
+                </h1>
+                <p className="max-w-3xl text-xs text-slate-600 leading-relaxed">
+                  Giám sát thời gian thực toàn bộ chu trình định biên nhân sự, 5 cổng phân quyền độc lập (Strict 5-Role Isolation), phễu ứng viên liên chiến dịch, tiến độ chấm điểm hội đồng và nhật ký kiểm toán bất biến ACID.
                 </p>
               </div>
 
-              <div className="flex flex-wrap items-center gap-2.5 pt-1">
+              {/* Action Toolbar */}
+              <div className="flex flex-wrap items-center gap-2.5 shrink-0">
                 <button
                   type="button"
-                  onClick={() => onSelectSection('admin-users')}
-                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-amber-500 px-3.5 py-2 text-xs font-bold text-slate-950 shadow-xs hover:bg-amber-400"
+                  onClick={() => setIsCreateUserOpen(true)}
+                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-2xl bg-amber-500 px-4 py-2.5 text-xs font-bold text-slate-950 shadow-md shadow-amber-500/20 hover:bg-amber-400 hover:shadow-lg transition-all active:scale-95"
                 >
                   <UserPlus className="h-4 w-4" />
-                  Quản lý Tài khoản ({store.users.length})
+                  Cấp Tài Khoản IAM
                 </button>
+
                 <button
                   type="button"
-                  onClick={() => onSelectSection('admin-governance')}
-                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:text-slate-900"
+                  onClick={() => {
+                    setNewDeptName('');
+                    setIsCreateDeptOpen(true);
+                  }}
+                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-2xl border border-slate-200/90 bg-white px-4 py-2.5 text-xs font-bold text-slate-800 shadow-2xs hover:bg-slate-50 transition-all active:scale-95"
                 >
-                  <Sliders className="h-4 w-4 text-amber-600" />
-                  Giám sát Chiến dịch ({store.jobs.length} Jobs)
+                  <Plus className="h-4 w-4 text-emerald-600" />
+                  Thêm Phòng Ban
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsSyncingDb(true);
+                    setTimeout(() => {
+                      setIsSyncingDb(false);
+                      notifyBanner('Đồng bộ CSDL SQL Server thành công! 13 bảng SSMS và Store đồng nhất 100%.');
+                    }, 600);
+                  }}
+                  disabled={isSyncingDb}
+                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-2xl border border-slate-200/90 bg-white px-3.5 py-2.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition-all active:scale-95 disabled:opacity-50"
+                  title="Đồng bộ lại trạng thái kết nối SQL Server"
+                >
+                  <RefreshCw className={cn('h-3.5 w-3.5 text-amber-600', isSyncingDb && 'animate-spin')} />
+                  <span>{isSyncingDb ? 'Đang sync...' : 'Làm Mới CSDL'}</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setDbSchemaModalOpen(true)}
+                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-2xl border border-blue-200 bg-blue-50/80 px-3.5 py-2.5 text-xs font-bold text-blue-800 shadow-2xs hover:bg-blue-100 transition-all active:scale-95"
+                >
+                  <Database className="h-3.5 w-3.5 text-blue-600" />
+                  Tra Cứu SSMS
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setHealthCheckOpen(true)}
+                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-2xl border border-emerald-300 bg-emerald-50/80 px-3.5 py-2.5 text-xs font-bold text-emerald-800 shadow-2xs hover:bg-emerald-100 transition-all active:scale-95"
+                >
+                  <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
+                  Kiểm Định Hệ Thống
                 </button>
               </div>
             </div>
           </div>
 
-          {/* Infrastructure & SQL Server Database Connectivity Status Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200/90 bg-white px-4 py-3 text-xs text-slate-800 shadow-2xs">
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex items-center gap-2">
-                <span className="relative flex h-2.5 w-2.5">
-                  <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-500" />
-                </span>
-                <span className="font-bold text-slate-700">Hạ tầng CSDL SQL Server:</span>
-                <code className="rounded border border-emerald-200 bg-emerald-50 px-2 py-0.5 font-mono text-[11px] font-bold text-emerald-800">
-                  localhost:1433 / ATS_Enterprise_DB
-                </code>
-              </div>
-              <span className="hidden text-slate-300 sm:inline">|</span>
-              <div className="flex items-center gap-1.5 text-slate-600">
-                <Database className="h-3.5 w-3.5 text-blue-600" />
-                <span>13 Bảng SSMS Sẵn Sàng (Dual-Sync Store Active)</span>
-              </div>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={() => {
-                  setIsSyncingDb(true);
-                  setTimeout(() => {
-                    setIsSyncingDb(false);
-                    notifyBanner('Đồng bộ CSDL SQL Server thành công! 13 bảng SSMS và Store đồng nhất 100%.');
-                  }, 600);
-                }}
-                disabled={isSyncingDb}
-                className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-bold text-slate-700 shadow-2xs hover:bg-slate-50 transition-all active:scale-95 disabled:opacity-50"
-                title="Đồng bộ lại trạng thái kết nối SQL Server"
-              >
-                <RefreshCw className={cn('h-3.5 w-3.5 text-amber-600', isSyncingDb && 'animate-spin')} />
-                <span>{isSyncingDb ? 'Đang đồng bộ...' : 'Làm mới CSDL'}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setDbSchemaModalOpen(true)}
-                className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-blue-200 bg-blue-50 px-3 py-1.5 text-xs font-bold text-blue-800 shadow-2xs hover:bg-blue-100 transition-all active:scale-95"
-              >
-                <Database className="h-3.5 w-3.5 text-blue-600" />
-                Tra Cứu 13 Bảng CSDL SSMS
-              </button>
-              <button
-                type="button"
-                onClick={() => setHealthCheckOpen(true)}
-                className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-bold text-emerald-800 shadow-2xs hover:bg-emerald-100 transition-all active:scale-95"
-              >
-                <ShieldCheck className="h-3.5 w-3.5 text-emerald-600" />
-                Chạy Kiểm Định Toàn Vẹn Hệ Thống
-              </button>
-            </div>
-          </div>
-
-          {/* Emergency Executive Offer Desk (Khi có ứng viên ở OFFER cần duyệt) */}
+          {/* 2. EMERGENCY EXECUTIVE OFFER DESK (Nếu có ứng viên ở OFFER cần duyệt) */}
           {pendingGlobalOffers.length > 0 && (
-            <div className="rounded-2xl border border-amber-300 bg-amber-50/80 p-4 shadow-xs">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-200/80 pb-2.5">
+            <div className="rounded-3xl border border-amber-300 bg-amber-50/80 p-5 shadow-xs">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-200/80 pb-3">
                 <div className="flex items-center gap-2">
-                  <Sparkles className="h-4 w-4 text-amber-600" />
-                  <span className="font-bold text-amber-950">
-                    Hàng Đợi Phê Duyệt Đề Nghị Tuyển Dụng Đặc Cách ({pendingGlobalOffers.length} ứng viên chờ duyệt Offer)
-                  </span>
+                  <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-amber-500/20 text-amber-700">
+                    <Sparkles className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <span className="font-bold text-amber-950">
+                      Hàng Đợi Phê Duyệt Đề Nghị Tuyển Dụng Đặc Cách ({pendingGlobalOffers.length} ứng viên chờ quyết định Offer)
+                    </span>
+                    <p className="text-[11px] text-amber-800">
+                      Theo cơ chế S1.6 Admin Executive Override, Admin có thể phê duyệt quyết định tuyển dụng khẩn cấp.
+                    </p>
+                  </div>
                 </div>
-                <span className="rounded-full bg-amber-200 px-2.5 py-0.5 font-mono text-[10px] font-bold text-amber-900">
+                <span className="rounded-full bg-amber-200 px-3 py-1 font-mono text-[10px] font-bold text-amber-900 ring-1 ring-amber-300">
                   ADMIN EXECUTIVE OVERRIDE (S1.6)
                 </span>
               </div>
-              <div className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="mt-3.5 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {pendingGlobalOffers.map((cand) => {
                   const job = store.jobs.find((j) => j.id === cand.jobId) ?? selectedJob;
                   const m = computeCandidateMetrics(cand, job.criteria);
                   return (
                     <div
                       key={cand.id}
-                      className="flex flex-col justify-between rounded-xl border border-amber-200 bg-white p-3.5 shadow-2xs"
+                      className="flex flex-col justify-between rounded-2xl border border-amber-200 bg-white p-4 shadow-2xs transition-all hover:shadow-md"
                     >
                       <div>
                         <div className="flex items-center justify-between">
                           <span className="font-bold text-slate-900">{cand.fullName}</span>
-                          <span className="font-mono text-xs font-bold text-emerald-700">
+                          <span className="rounded-md bg-emerald-50 px-2 py-0.5 font-mono text-xs font-bold text-emerald-700 ring-1 ring-emerald-200">
                             {m.overallScore !== null ? `${m.overallScore.toFixed(2)} / 5.00` : 'Đủ phiếu'}
                           </span>
                         </div>
-                        <p className="mt-0.5 text-[11px] text-slate-500">
+                        <p className="mt-1 text-[11px] text-slate-500">
                           {job.title} · <strong>{job.department}</strong>
                         </p>
                         <p className="mt-1 font-mono text-[11px] text-amber-900">
@@ -798,13 +816,13 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                           <strong>{cand.offerSalary || job.salaryRange || 'Theo thỏa thuận'}</strong>
                         </p>
                       </div>
-                      <div className="mt-3 flex items-center justify-between border-t border-slate-100 pt-2.5">
+                      <div className="mt-3.5 flex items-center justify-between border-t border-slate-100 pt-3">
                         <button
                           type="button"
                           onClick={() => onOpenCandidate360(cand.id)}
-                          className="cursor-pointer text-[11px] font-bold text-blue-600 hover:underline"
+                          className="cursor-pointer text-xs font-bold text-blue-600 hover:underline inline-flex items-center gap-1"
                         >
-                          Xem Hồ sơ 360° →
+                          Xem Hồ sơ 360° <ArrowRight className="h-3 w-3" />
                         </button>
                         <button
                           type="button"
@@ -817,7 +835,7 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                               salary: cand.offerSalary || job.salaryRange || 'Theo thỏa thuận',
                             })
                           }
-                          className="cursor-pointer rounded-xl bg-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white shadow-2xs hover:bg-emerald-700 transition-all active:scale-95"
+                          className="cursor-pointer rounded-xl bg-emerald-600 px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-emerald-700 transition-all active:scale-95"
                         >
                           Phê Duyệt Ngay
                         </button>
@@ -829,315 +847,685 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
             </div>
           )}
 
-          {/* 5 Executive KPI Cards */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-5">
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
+          {/* 3. CORE EXECUTIVE BENTO KPI METRICS (4 Cohesive Cards) */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {/* KPI 1: IAM Identity & RBAC Accounts */}
+            <div className="rounded-3xl border border-slate-200/90 bg-white p-5 shadow-2xs transition-all hover:shadow-md">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500">Tài khoản IAM</span>
-                <Users className="h-4 w-4 text-amber-600" />
-              </div>
-              <div className="mt-2 flex items-baseline gap-1.5">
-                <span className="font-mono text-2xl font-extrabold text-slate-900 tabular-nums">
-                  {store.users.length}
-                </span>
-                <span className="text-xs font-semibold text-emerald-600">
-                  ({systemMetrics.activeUsers} Active)
-                </span>
-              </div>
-              <p className="mt-1 text-[11px] text-slate-400">
-                {systemMetrics.inactiveUsers} tài khoản đang khóa
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500">Cơ cấu Phòng ban</span>
-                <Building2 className="h-4 w-4 text-blue-600" />
-              </div>
-              <div className="mt-2 flex items-baseline gap-1.5">
-                <span className="font-mono text-2xl font-extrabold text-slate-900 tabular-nums">
-                  {store.departments.length}
-                </span>
-                <span className="text-xs font-semibold text-slate-500">Đơn vị</span>
-              </div>
-              <p className="mt-1 text-[11px] text-slate-400">
-                {store.requisitions.length} phiếu yêu cầu định biên
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500">Lấp đầy Định biên</span>
-                <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-              </div>
-              <div className="mt-2 flex items-baseline gap-1.5">
-                <span className="font-mono text-2xl font-extrabold text-slate-900">
-                  {systemMetrics.totalFilled}/{systemMetrics.totalHeadcount}
-                </span>
-                <span className="text-xs font-bold text-emerald-600">
-                  (
-                  {systemMetrics.totalHeadcount > 0
-                    ? Math.round((systemMetrics.totalFilled / systemMetrics.totalHeadcount) * 100)
-                    : 0}
-                  %)
-                </span>
-              </div>
-              <p className="mt-1 text-[11px] text-slate-400">
-                {systemMetrics.publishedJobs}/{store.jobs.length} chiến dịch đang mở
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500">Tổng Hồ sơ Ứng viên</span>
-                <UserCheck className="h-4 w-4 text-indigo-600" />
-              </div>
-              <div className="mt-2 flex items-baseline gap-1.5">
-                <span className="font-mono text-2xl font-extrabold text-slate-900 tabular-nums">
-                  {systemMetrics.totalCandidates}
-                </span>
-                <span className="text-xs font-semibold text-indigo-600">
-                  ({systemMetrics.hiredCandidates} Hired · {systemMetrics.offerCandidates} Offer)
-                </span>
-              </div>
-              <p className="mt-1 text-[11px] text-slate-400">
-                {systemMetrics.interviewCandidates} ứng viên đang ở vòng Phỏng vấn
-              </p>
-            </div>
-
-            <div className="rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-semibold text-slate-500">Phiếu chấm & Audit</span>
-                <Activity className="h-4 w-4 text-violet-600" />
-              </div>
-              <div className="mt-2 flex items-baseline gap-1.5">
-                <span className="font-mono text-2xl font-extrabold text-slate-900">
-                  {systemMetrics.submittedSheets}/{systemMetrics.totalSheets}
-                </span>
-                <span className="text-xs font-semibold text-violet-600">Scorecards</span>
-              </div>
-              <p className="mt-1 text-[11px] text-slate-400">
-                {store.auditLogs.length} sự kiện Audit · {store.emailOutbox.length} Email Outbox
-              </p>
-            </div>
-          </div>
-
-          {/* System-wide Pipeline Breakdown & Active Campaigns */}
-          <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
-            {/* Left: System-wide Stage Funnel */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs lg:col-span-6">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900">
-                    Phễu Tuyển Dụng Toàn Hệ Thống (All Jobs Pipeline)
-                  </h3>
-                  <p className="text-[11px] text-slate-500">
-                    Tổng hợp phân bổ ứng viên trên tất cả các vị trí đang tuyển
-                  </p>
+                <span className="text-xs font-bold text-slate-500">Định Danh Nhân Sự & IAM</span>
+                <div className="flex h-8 w-8 items-center justify-center rounded-2xl bg-amber-50 text-amber-600 border border-amber-200/60">
+                  <Users className="h-4 w-4" />
                 </div>
-                <span className="rounded-lg bg-slate-100 px-2.5 py-1 font-mono text-xs font-bold text-slate-700">
-                  Tổng: {store.candidates.length} hồ sơ
+              </div>
+
+              <div className="mt-3 flex items-baseline justify-between">
+                <div>
+                  <span className="font-mono text-3xl font-extrabold text-slate-900 tracking-tight">
+                    {systemMetrics.activeUsers}
+                  </span>
+                  <span className="font-mono text-xs font-semibold text-slate-400"> / {store.users.length} tài khoản</span>
+                </div>
+                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 ring-1 ring-emerald-200">
+                  {Math.round((systemMetrics.activeUsers / Math.max(1, store.users.length)) * 100)}% Hoạt động
                 </span>
               </div>
 
-              <div className="mt-4 space-y-2.5">
-                {(
-                  [
-                    { code: 'APPLIED', label: '1. Ứng tuyển mới (APPLIED)', color: 'bg-slate-600' },
-                    { code: 'SCREENING', label: '2. Sàng lọc CV (SCREENING)', color: 'bg-sky-600' },
-                    { code: 'TEST', label: '3. Bài Test Kỹ thuật (TEST)', color: 'bg-indigo-600' },
-                    {
-                      code: 'INTERVIEW',
-                      label: '4. Phỏng vấn Hội đồng (INTERVIEW)',
-                      color: 'bg-violet-600',
-                    },
-                    { code: 'OFFER', label: '5. Đề nghị Tuyển dụng (OFFER)', color: 'bg-amber-500' },
-                    { code: 'HIRED', label: '6. Chính thức Trúng tuyển (HIRED)', color: 'bg-emerald-600' },
-                    { code: 'REJECTED', label: '7. Đã loại / Đóng tự động (REJECTED)', color: 'bg-red-500' },
-                  ] as const
-                ).map((st) => {
-                  const count = store.candidates.filter((c) => c.stageCode === st.code).length;
-                  const pct =
-                    store.candidates.length > 0
-                      ? Math.round((count / store.candidates.length) * 100)
-                      : 0;
+              {/* Mini active/inactive horizontal bar */}
+              <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-100 flex">
+                <div
+                  className="h-full bg-emerald-500 transition-all duration-300"
+                  style={{
+                    width: `${(systemMetrics.activeUsers / Math.max(1, store.users.length)) * 100}%`,
+                  }}
+                  title={`Hoạt động: ${systemMetrics.activeUsers}`}
+                />
+                <div
+                  className="h-full bg-red-400 transition-all duration-300"
+                  style={{
+                    width: `${(systemMetrics.inactiveUsers / Math.max(1, store.users.length)) * 100}%`,
+                  }}
+                  title={`Đã khóa: ${systemMetrics.inactiveUsers}`}
+                />
+              </div>
+
+              {/* Role distribution chips */}
+              <div className="mt-3 flex flex-wrap gap-1 text-[10px] font-mono font-bold text-slate-500">
+                {(['ADMIN', 'HIRING_MANAGER', 'HR', 'INTERVIEWER', 'CANDIDATE'] as UserRole[]).map((r) => {
+                  const count = store.users.filter((u) => u.role === r).length;
                   return (
-                    <div key={st.code} className="space-y-1 text-xs">
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-slate-700">{st.label}</span>
-                        <span className="font-mono font-bold text-slate-900">
-                          {count} ứng viên ({pct}%)
-                        </span>
-                      </div>
-                      <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
-                        <div
-                          className={cn('h-full rounded-full transition-all duration-300', st.color)}
-                          style={{ width: `${Math.max(pct, count > 0 ? 6 : 0)}%` }}
-                        />
-                      </div>
-                    </div>
+                    <span key={r} className="rounded-md bg-slate-50 px-1.5 py-0.5 border border-slate-200/80">
+                      {r.slice(0, 3)}: {count}
+                    </span>
                   );
                 })}
               </div>
+
+              <button
+                type="button"
+                onClick={() => onSelectSection('admin-users')}
+                className="mt-3.5 inline-flex cursor-pointer items-center gap-1 text-xs font-bold text-amber-700 hover:text-amber-800 transition-colors"
+              >
+                Quản lý 5 Role IAM <ArrowRight className="h-3 w-3" />
+              </button>
             </div>
 
-            {/* Right: Active Jobs & Headcount Status */}
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs lg:col-span-6">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900">
-                    Giám Sát Chiến Dịch Tuyển Dụng & Định Biên
-                  </h3>
-                  <p className="text-[11px] text-slate-500">
-                    Bấm vào bất kỳ chiến dịch nào để kiểm tra cấu hình Barem & danh sách ứng viên
-                  </p>
+            {/* KPI 2: Headcount Quota & Fulfillment */}
+            <div className="rounded-3xl border border-slate-200/90 bg-white p-5 shadow-2xs transition-all hover:shadow-md">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-500">Chỉ Tiêu Định Biên Nhân Sự</span>
+                <div className="flex h-8 w-8 items-center justify-center rounded-2xl bg-emerald-50 text-emerald-600 border border-emerald-200/60">
+                  <CheckCircle2 className="h-4 w-4" />
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setGovTab('jobs');
-                    onSelectSection('admin-governance');
-                  }}
-                  className="cursor-pointer rounded-lg border border-slate-200 px-2.5 py-1 text-xs font-bold text-blue-600 hover:bg-blue-50"
-                >
-                  Mở Trình quản lý Job →
-                </button>
               </div>
 
-              <div className="mt-4 space-y-3">
-                {store.jobs.map((job) => {
-                  const jobCands = store.candidates.filter((c) => c.jobId === job.id);
-                  const weightSum = job.criteria.reduce((s, c) => s + c.weightPercent, 0);
-                  return (
-                    <div
-                      key={job.id}
-                      className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200/90 bg-slate-50/60 p-3.5 text-xs"
-                    >
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="font-mono text-[11px] font-bold text-slate-400">
-                            #{job.id}
-                          </span>
-                          <span className="font-bold text-slate-900">{job.title}</span>
-                          <span
-                            className={cn(
-                              'rounded-full px-2 py-0.5 font-mono text-[10px] font-bold',
-                              job.status === 'PUBLISHED'
-                                ? 'bg-emerald-100 text-emerald-800'
-                                : job.status === 'DRAFT'
-                                  ? 'bg-amber-100 text-amber-800'
-                                  : 'bg-slate-200 text-slate-700',
-                            )}
-                          >
-                            {job.status}
+              <div className="mt-3 flex items-baseline justify-between">
+                <div>
+                  <span className="font-mono text-3xl font-extrabold text-slate-900 tracking-tight">
+                    {systemMetrics.totalFilled}
+                  </span>
+                  <span className="font-mono text-xs font-semibold text-slate-400"> / {systemMetrics.totalHeadcount} chỉ tiêu</span>
+                </div>
+                <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-bold text-emerald-700 ring-1 ring-emerald-200">
+                  {systemMetrics.totalHeadcount > 0
+                    ? Math.round((systemMetrics.totalFilled / systemMetrics.totalHeadcount) * 100)
+                    : 0}% Lấp đầy
+                </span>
+              </div>
+
+              {/* Fulfillment progress bar */}
+              <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                <div
+                  className="h-full bg-emerald-500 rounded-full transition-all duration-300"
+                  style={{
+                    width: `${systemMetrics.totalHeadcount > 0 ? Math.min(100, Math.round((systemMetrics.totalFilled / systemMetrics.totalHeadcount) * 100)) : 0}%`,
+                  }}
+                />
+              </div>
+
+              <p className="mt-3 text-[11px] text-slate-500 truncate">
+                {systemMetrics.publishedJobs} Job mở · {store.departments.length} Phòng ban · {store.requisitions.length} Requisitions
+              </p>
+
+              <button
+                type="button"
+                onClick={() => onSelectSection('admin-departments')}
+                className="mt-3.5 inline-flex cursor-pointer items-center gap-1 text-xs font-bold text-emerald-700 hover:text-emerald-800 transition-colors"
+              >
+                Cơ cấu Phòng ban & HM <ArrowRight className="h-3 w-3" />
+              </button>
+            </div>
+
+            {/* KPI 3: Pipeline Velocity & Candidates */}
+            <div className="rounded-3xl border border-slate-200/90 bg-white p-5 shadow-2xs transition-all hover:shadow-md">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-500">Dòng Chảy Hồ Sơ Tuyển Dụng</span>
+                <div className="flex h-8 w-8 items-center justify-center rounded-2xl bg-indigo-50 text-indigo-600 border border-indigo-200/60">
+                  <TrendingUp className="h-4 w-4" />
+                </div>
+              </div>
+
+              <div className="mt-3 flex items-baseline justify-between">
+                <div>
+                  <span className="font-mono text-3xl font-extrabold text-slate-900 tracking-tight">
+                    {systemMetrics.totalCandidates}
+                  </span>
+                  <span className="font-mono text-xs font-semibold text-slate-400"> hồ sơ toàn Job</span>
+                </div>
+                <span className="rounded-full bg-indigo-50 px-2 py-0.5 text-[10px] font-bold text-indigo-700 ring-1 ring-indigo-200">
+                  {store.jobs.length} Vị trí
+                </span>
+              </div>
+
+              {/* Status breakdown pills */}
+              <div className="mt-3 grid grid-cols-3 gap-1.5 text-center text-[10px] font-bold">
+                <div className="rounded-xl bg-emerald-50 py-1 text-emerald-800 border border-emerald-100">
+                  {systemMetrics.hiredCandidates} Hired
+                </div>
+                <div className="rounded-xl bg-amber-50 py-1 text-amber-800 border border-amber-100">
+                  {systemMetrics.offerCandidates} Offer
+                </div>
+                <div className="rounded-xl bg-violet-50 py-1 text-violet-800 border border-violet-100">
+                  {systemMetrics.interviewCandidates} Phỏng vấn
+                </div>
+              </div>
+
+              <p className="mt-3 text-[11px] text-slate-500">
+                Tỷ lệ đỗ phỏng vấn: ~{Math.round(((systemMetrics.hiredCandidates + systemMetrics.offerCandidates) / Math.max(1, systemMetrics.totalCandidates)) * 100)}%
+              </p>
+
+              <button
+                type="button"
+                onClick={() => onSelectSection('admin-governance')}
+                className="mt-3.5 inline-flex cursor-pointer items-center gap-1 text-xs font-bold text-indigo-700 hover:text-indigo-800 transition-colors"
+              >
+                Giám sát Danh bạ Ứng viên <ArrowRight className="h-3 w-3" />
+              </button>
+            </div>
+
+            {/* KPI 4: Scorecard Evaluation & Audit Trail */}
+            <div className="rounded-3xl border border-slate-200/90 bg-white p-5 shadow-2xs transition-all hover:shadow-md">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-500">Hội Đồng & Kiểm Toán ACID</span>
+                <div className="flex h-8 w-8 items-center justify-center rounded-2xl bg-violet-50 text-violet-600 border border-violet-200/60">
+                  <Award className="h-4 w-4" />
+                </div>
+              </div>
+
+              <div className="mt-3 flex items-baseline justify-between">
+                <div>
+                  <span className="font-mono text-3xl font-extrabold text-slate-900 tracking-tight">
+                    {systemMetrics.submittedSheets}
+                  </span>
+                  <span className="font-mono text-xs font-semibold text-slate-400"> / {systemMetrics.totalSheets} phiếu</span>
+                </div>
+                <span className="rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-bold text-violet-700 ring-1 ring-violet-200">
+                  {systemMetrics.totalSheets > 0
+                    ? Math.round((systemMetrics.submittedSheets / systemMetrics.totalSheets) * 100)
+                    : 100}% Chấm xong
+                </span>
+              </div>
+
+              {/* Scorecard completion progress bar */}
+              <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                <div
+                  className="h-full bg-violet-500 rounded-full transition-all duration-300"
+                  style={{
+                    width: `${systemMetrics.totalSheets > 0 ? (systemMetrics.submittedSheets / systemMetrics.totalSheets) * 100 : 100}%`,
+                  }}
+                />
+              </div>
+
+              <p className="mt-3 text-[11px] text-slate-500 truncate">
+                {store.auditLogs.length} sự kiện Audit · {store.emailOutbox.length} Email Outbox (.ics)
+              </p>
+
+              <button
+                type="button"
+                onClick={() => onSelectSection('admin-audit')}
+                className="mt-3.5 inline-flex cursor-pointer items-center gap-1 text-xs font-bold text-violet-700 hover:text-violet-800 transition-colors"
+              >
+                Mở Nhật ký Kiểm toán <ArrowRight className="h-3 w-3" />
+              </button>
+            </div>
+          </div>
+
+          {/* 4. STRATEGIC DEEP-DIVE ANALYTICS BENTO GRID (12 Cols: 7 Left, 5 Right) */}
+          <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
+            {/* LEFT 7 COLS: Pipeline Funnel + Department Headcount */}
+            <div className="space-y-5 lg:col-span-7">
+              {/* Widget 1: System-wide Pipeline Funnel */}
+              <div className="rounded-3xl border border-slate-200/90 bg-white p-5 shadow-xs">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <Layers className="h-4 w-4 text-amber-600" />
+                      Phễu Tuyển Dụng Toàn Hệ Thống (Cross-Job Pipeline Funnel)
+                    </h3>
+                    <p className="text-[11px] text-slate-500">
+                      Tổng hợp phân bổ {store.candidates.length} hồ sơ trên tất cả các vị trí đang tuyển
+                    </p>
+                  </div>
+                  <span className="rounded-xl bg-slate-100 px-3 py-1 font-mono text-xs font-bold text-slate-700">
+                    Tổng: {store.candidates.length} ứng viên
+                  </span>
+                </div>
+
+                <div className="mt-4 space-y-2.5">
+                  {(
+                    [
+                      { code: 'APPLIED', label: '1. Ứng tuyển mới (APPLIED)', color: 'bg-slate-700' },
+                      { code: 'SCREENING', label: '2. Sàng lọc CV (SCREENING)', color: 'bg-sky-600' },
+                      { code: 'TEST', label: '3. Bài Test Kỹ thuật (TEST)', color: 'bg-indigo-600' },
+                      { code: 'INTERVIEW', label: '4. Phỏng vấn Hội đồng (INTERVIEW)', color: 'bg-violet-600' },
+                      { code: 'OFFER', label: '5. Đề nghị Tuyển dụng (OFFER)', color: 'bg-amber-500' },
+                      { code: 'HIRED', label: '6. Chính thức Trúng tuyển (HIRED)', color: 'bg-emerald-600' },
+                      { code: 'REJECTED', label: '7. Đã loại / Không đạt (REJECTED)', color: 'bg-red-500' },
+                    ] as const
+                  ).map((st) => {
+                    const count = store.candidates.filter((c) => c.stageCode === st.code).length;
+                    const pct =
+                      store.candidates.length > 0
+                        ? Math.round((count / store.candidates.length) * 100)
+                        : 0;
+                    return (
+                      <div key={st.code} className="space-y-1 text-xs">
+                        <div className="flex items-center justify-between">
+                          <span className="font-semibold text-slate-700">{st.label}</span>
+                          <span className="font-mono font-bold text-slate-900">
+                            {count} hồ sơ <span className="text-slate-400 font-normal">({pct}%)</span>
                           </span>
                         </div>
-                        <p className="mt-1 text-[11px] text-slate-500">
-                          Phòng ban: <strong>{job.department}</strong> · Tổng trọng số:{' '}
-                          <strong
-                            className={weightSum === 100 ? 'text-emerald-700' : 'text-red-600'}
-                          >
-                            {weightSum}%
-                          </strong>{' '}
-                          · Hồ sơ: <strong>{jobCands.length} ứng viên</strong>
-                        </p>
+                        <div className="h-2.5 w-full overflow-hidden rounded-full bg-slate-100">
+                          <div
+                            className={cn('h-full rounded-full transition-all duration-300', st.color)}
+                            style={{ width: `${Math.max(pct, count > 0 ? 5 : 0)}%` }}
+                          />
+                        </div>
                       </div>
+                    );
+                  })}
+                </div>
+              </div>
 
-                      <div className="flex items-center gap-2">
-                        <div className="text-right">
-                          <span className="font-mono text-xs font-extrabold text-slate-900">
+              {/* Widget 2: Department Headcount Fulfillment Allocation */}
+              <div className="rounded-3xl border border-slate-200/90 bg-white p-5 shadow-xs">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <Building2 className="h-4 w-4 text-blue-600" />
+                      Cơ Cấu Định Biên 5 Phòng Ban Chuyên Môn
+                    </h3>
+                    <p className="text-[11px] text-slate-500">
+                      So sánh nhân sự hiện có, chỉ tiêu Requisition và tỷ lệ lấp đầy theo phòng ban
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onSelectSection('admin-departments')}
+                    className="cursor-pointer text-xs font-bold text-blue-600 hover:underline"
+                  >
+                    Xem chi tiết →
+                  </button>
+                </div>
+
+                <div className="mt-4 space-y-3">
+                  {enrichedDepartments.map((dept) => {
+                    const pct =
+                      dept.totalHeadcount > 0
+                        ? Math.round((dept.totalFilled / dept.totalHeadcount) * 100)
+                        : 100;
+                    return (
+                      <div
+                        key={dept.id}
+                        className="rounded-2xl border border-slate-200/80 bg-slate-50/60 p-3.5 transition-all hover:bg-slate-50"
+                      >
+                        <div className="flex flex-wrap items-center justify-between gap-2">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-slate-900 text-xs">{dept.name}</span>
+                              <span className="rounded-md bg-white border border-slate-200 px-2 py-0.5 text-[10px] font-semibold text-slate-600">
+                                HM: {dept.managerName}
+                              </span>
+                            </div>
+                            <p className="mt-1 text-[11px] text-slate-500">
+                              Nhân sự: <strong>{dept.actualMemberCount}</strong> · Requisitions:{' '}
+                              <strong>{dept.actualRequisitions.length}</strong> · Jobs:{' '}
+                              <strong>{dept.actualJobs.length}</strong>
+                            </p>
+                          </div>
+
+                          <div className="text-right">
+                            <span className="font-mono text-xs font-extrabold text-slate-900">
+                              {dept.totalFilled}/{dept.totalHeadcount} định biên
+                            </span>
+                            <span className="ml-1.5 font-mono text-xs font-bold text-emerald-700">
+                              ({pct}%)
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Progress Bar */}
+                        <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-slate-200/80">
+                          <div
+                            className={cn(
+                              'h-full rounded-full transition-all duration-300',
+                              pct >= 100 ? 'bg-emerald-500' : pct > 0 ? 'bg-amber-500' : 'bg-slate-300',
+                            )}
+                            style={{ width: `${Math.min(100, pct)}%` }}
+                          />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* RIGHT 5 COLS: Active Jobs Radar + Live Audit Stream */}
+            <div className="space-y-5 lg:col-span-5">
+              {/* Widget 3: Active Campaigns & Barem Weight Health */}
+              <div className="rounded-3xl border border-slate-200/90 bg-white p-5 shadow-xs">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <Briefcase className="h-4 w-4 text-emerald-600" />
+                      Giám Sát Chiến Dịch Job & Barem Trọng Số
+                    </h3>
+                    <p className="text-[11px] text-slate-500">
+                      Trạng thái xuất bản, Barem trọng số 100% (S2.8) và số lượng hồ sơ
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setGovTab('jobs');
+                      onSelectSection('admin-governance');
+                    }}
+                    className="cursor-pointer text-xs font-bold text-blue-600 hover:underline"
+                  >
+                    Mở Jobs →
+                  </button>
+                </div>
+
+                <div className="mt-4 space-y-3">
+                  {store.jobs.map((job) => {
+                    const jobCands = store.candidates.filter((c) => c.jobId === job.id);
+                    const weightSum = job.criteria.reduce((s, c) => s + c.weightPercent, 0);
+                    const isCriteriaValid = weightSum === 100 && job.criteria.length > 0;
+                    return (
+                      <div
+                        key={job.id}
+                        className="rounded-2xl border border-slate-200/80 bg-slate-50/60 p-3.5 transition-all hover:bg-slate-50 text-xs"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div>
+                            <div className="flex items-center gap-1.5 flex-wrap">
+                              <span className="font-mono text-[10px] font-bold text-slate-400">
+                                #{job.id}
+                              </span>
+                              <span className="font-bold text-slate-900">{job.title}</span>
+                              <span
+                                className={cn(
+                                  'rounded-full px-2 py-0.5 font-mono text-[10px] font-bold',
+                                  job.status === 'PUBLISHED'
+                                    ? 'bg-emerald-100 text-emerald-800'
+                                    : job.status === 'DRAFT'
+                                      ? 'bg-amber-100 text-amber-800'
+                                      : 'bg-slate-200 text-slate-700',
+                                )}
+                              >
+                                {job.status}
+                              </span>
+                            </div>
+                            <p className="mt-1 text-[11px] text-slate-500">
+                              {job.department} · <strong>{jobCands.length} hồ sơ</strong>
+                            </p>
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              onSelectJobId(job.id);
+                              setGovTab('jobs');
+                              onSelectSection('admin-governance');
+                            }}
+                            className="cursor-pointer rounded-xl bg-slate-900 px-3 py-1 text-[11px] font-bold text-white shadow-2xs hover:bg-amber-600 transition-all active:scale-95 shrink-0"
+                          >
+                            Cấu hình
+                          </button>
+                        </div>
+
+                        <div className="mt-2.5 flex items-center justify-between border-t border-slate-200/60 pt-2 text-[11px]">
+                          <span
+                            className={cn(
+                              'font-mono font-bold',
+                              isCriteriaValid ? 'text-emerald-700' : 'text-red-600',
+                            )}
+                          >
+                            Barem: {weightSum}% {isCriteriaValid ? '(Chuẩn S2.8)' : '(Lỗi)'}
+                          </span>
+                          <span className="font-mono font-bold text-slate-700">
                             Định biên: {job.filledCount}/{job.headcount}
                           </span>
                         </div>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            onSelectJobId(job.id);
-                            setGovTab('jobs');
-                            onSelectSection('admin-governance');
-                          }}
-                          className="cursor-pointer rounded-lg bg-slate-900 px-2.5 py-1.5 text-[11px] font-bold text-white hover:bg-amber-600"
-                        >
-                          Cấu hình
-                        </button>
                       </div>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Widget 4: Live Audit Stream */}
+              <div className="rounded-3xl border border-slate-200/90 bg-white p-5 shadow-xs">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+                  <div>
+                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-violet-600" />
+                      Nhật Ký Sự Kiện Gần Nhất (Live Audit Trail)
+                    </h3>
+                    <p className="text-[11px] text-slate-500">
+                      5 hành động kiểm toán mới nhất ghi nhận bất biến trên hệ thống
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => onSelectSection('admin-audit')}
+                    className="cursor-pointer text-xs font-bold text-violet-600 hover:underline"
+                  >
+                    Xem tất cả ({store.auditLogs.length}) →
+                  </button>
+                </div>
+
+                <div className="mt-3.5 space-y-2.5">
+                  {store.auditLogs.slice(0, 5).map((log) => (
+                    <div
+                      key={log.id}
+                      className="rounded-2xl border border-slate-200/70 bg-slate-50/50 p-2.5 text-xs transition-colors hover:bg-white"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-1.5 truncate">
+                          <span className="rounded-md bg-violet-100 px-1.5 py-0.5 font-mono text-[10px] font-bold text-violet-800">
+                            {log.action}
+                          </span>
+                          <span className="font-semibold text-slate-900 truncate">{log.actorName}</span>
+                          <span className="text-[10px] text-slate-400">({log.actorRole})</span>
+                        </div>
+                        <span className="font-mono text-[10px] text-slate-400 shrink-0">
+                          {log.time.slice(11, 19) || log.time}
+                        </span>
+                      </div>
+                      <p className="mt-1 text-[11px] text-slate-600 truncate">{log.detail}</p>
                     </div>
-                  );
-                })}
+                  ))}
+                </div>
               </div>
             </div>
           </div>
 
-          {/* 5-Role Strict RBAC Governance Matrix */}
-          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-            <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+          {/* 5. INTERACTIVE RBAC GOVERNANCE & SECURITY MATRIX (Spec 001) */}
+          <div className="rounded-3xl border border-slate-200/90 bg-white p-6 shadow-xs">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
               <div>
-                <h3 className="text-base font-bold text-slate-900">
+                <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
+                  <ShieldCheck className="h-5 w-5 text-amber-600" />
                   Ma Trận Phân Quyền Độc Lập 5 Vai Trò (Strict 5-Role RBAC Matrix — Spec 001)
                 </h3>
                 <p className="text-xs text-slate-500">
-                  Mỗi tài khoản chỉ được gắn duy nhất 1 Role và bị khóa chặt trong không gian làm
-                  việc của Role đó sau khi xác thực JWT.
+                  Mỗi tài khoản được gắn duy nhất 1 Role và bị khóa chặt trong Role Portal sau xác thực JWT (No Quick Role Switcher).
                 </p>
               </div>
-              <span className="rounded-lg bg-amber-50 px-3 py-1 font-mono text-[11px] font-bold text-amber-800 ring-1 ring-amber-200">
-                NO QUICK ROLE SWITCHER · STRICT SESSION ISOLATION
-              </span>
+
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setOverviewRbacTab('INSPECTOR')}
+                  className={cn(
+                    'cursor-pointer rounded-2xl px-3.5 py-1.5 text-xs font-bold transition-all',
+                    overviewRbacTab === 'INSPECTOR'
+                      ? 'bg-amber-500 text-slate-950 shadow-xs'
+                      : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
+                  )}
+                >
+                  Khám Phá Theo Role
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setOverviewRbacTab('MATRIX')}
+                  className={cn(
+                    'cursor-pointer rounded-2xl px-3.5 py-1.5 text-xs font-bold transition-all',
+                    overviewRbacTab === 'MATRIX'
+                      ? 'bg-amber-500 text-slate-950 shadow-xs'
+                      : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
+                  )}
+                >
+                  Bảng Ma Trận Tổng Hợp
+                </button>
+              </div>
             </div>
 
-            <div className="mt-4 overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead>
-                  <tr className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold text-slate-600 uppercase">
-                    <th className="px-3.5 py-3">Chức năng / Quyền hạn Nghiệp vụ</th>
-                    <th className="px-3 py-3 font-mono">Mã Spec</th>
-                    <th className="px-3 py-3 text-center">ADMIN</th>
-                    <th className="px-3 py-3 text-center">HIRING_MANAGER</th>
-                    <th className="px-3 py-3 text-center">HR</th>
-                    <th className="px-3 py-3 text-center">INTERVIEWER</th>
-                    <th className="px-3 py-3 text-center">CANDIDATE</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {RBAC_MATRIX.map((row) => (
-                    <tr key={row.capability} className="hover:bg-slate-50/70">
-                      <td className="px-3.5 py-2.5 font-semibold text-slate-900">
-                        {row.capability}
-                      </td>
-                      <td className="px-3 py-2.5 font-mono text-[11px] font-bold text-slate-500">
-                        {row.specRef}
-                      </td>
-                      {(
-                        ['ADMIN', 'HIRING_MANAGER', 'HR', 'INTERVIEWER', 'CANDIDATE'] as UserRole[]
-                      ).map((r) => {
-                        const perm = row.roles[r];
-                        return (
-                          <td key={r} className="px-3 py-2.5 text-center">
-                            <span
-                              className={cn(
-                                'inline-block rounded-md px-2 py-0.5 font-mono text-[10px] font-bold',
-                                perm === 'FULL' && 'bg-emerald-100 text-emerald-800',
-                                perm === 'SCOPED' && 'bg-blue-100 text-blue-800',
-                                perm === 'READ' && 'bg-amber-100 text-amber-800',
-                                perm === 'NONE' && 'bg-slate-100 text-slate-400',
-                              )}
-                            >
-                              {perm === 'FULL'
-                                ? 'TOÀN QUYỀN'
-                                : perm === 'SCOPED'
-                                  ? 'THEO PHÂN CÔNG'
-                                  : perm === 'READ'
-                                    ? 'CHỈ XEM'
-                                    : 'CHẶN (403)'}
+            {/* TAB CONTENT: INSPECTOR VIEW */}
+            {overviewRbacTab === 'INSPECTOR' ? (
+              <div className="mt-4 space-y-4">
+                {/* 5 Role Select Buttons */}
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">
+                  {(['ADMIN', 'HIRING_MANAGER', 'HR', 'INTERVIEWER', 'CANDIDATE'] as UserRole[]).map(
+                    (r) => {
+                      const isSel = overviewSelectedRole === r;
+                      const userCount = store.users.filter((u) => u.role === r).length;
+                      return (
+                        <button
+                          key={r}
+                          type="button"
+                          onClick={() => setOverviewSelectedRole(r)}
+                          className={cn(
+                            'cursor-pointer rounded-2xl border p-3 text-left transition-all',
+                            isSel
+                              ? 'border-amber-500 bg-amber-50/80 shadow-xs ring-2 ring-amber-500/20'
+                              : 'border-slate-200 bg-slate-50/60 hover:bg-white',
+                          )}
+                        >
+                          <div className="flex items-center justify-between">
+                            <span className="font-mono text-xs font-bold text-slate-900">{r}</span>
+                            <span className="rounded-full bg-slate-200 px-1.5 py-0.2 text-[10px] font-bold text-slate-700 font-mono">
+                              {userCount}
                             </span>
-                          </td>
-                        );
-                      })}
+                          </div>
+                          <p className="mt-1 truncate text-[11px] text-slate-500">
+                            {ROLE_META[r].portalTitle}
+                          </p>
+                        </button>
+                      );
+                    },
+                  )}
+                </div>
+
+                {/* Selected Role Deep Dive */}
+                <div className="rounded-2xl border border-slate-200 bg-slate-50/50 p-4">
+                  <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 pb-3">
+                    <div>
+                      <span className="rounded-md bg-amber-100 text-amber-900 px-2 py-0.5 font-mono text-[11px] font-bold">
+                        VAI TRÒ: {overviewSelectedRole}
+                      </span>
+                      <h4 className="mt-1 text-sm font-bold text-slate-900">
+                        {ROLE_META[overviewSelectedRole].portalTitle}
+                      </h4>
+                      <p className="text-xs text-slate-600">
+                        {ROLE_META[overviewSelectedRole].portalSubtitle}
+                      </p>
+                    </div>
+
+                    <div className="text-right">
+                      <span className="text-[11px] text-slate-500">Tài khoản thuộc Role:</span>
+                      <div className="flex items-center gap-1 justify-end mt-1 flex-wrap">
+                        {store.users
+                          .filter((u) => u.role === overviewSelectedRole)
+                          .map((u) => (
+                            <span
+                              key={u.id}
+                              className="rounded-md bg-white border border-slate-200 px-2 py-0.5 text-[11px] font-semibold text-slate-800"
+                            >
+                              {u.fullName} ({u.status})
+                            </span>
+                          ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Capabilities List for Selected Role */}
+                  <div className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                    {RBAC_MATRIX.map((row) => {
+                      const perm = row.roles[overviewSelectedRole];
+                      return (
+                        <div
+                          key={row.capability}
+                          className="flex items-start justify-between gap-2 rounded-xl border border-slate-200/80 bg-white p-3 text-xs"
+                        >
+                          <div>
+                            <span className="font-semibold text-slate-800 leading-snug block">
+                              {row.capability}
+                            </span>
+                            <span className="mt-0.5 font-mono text-[10px] text-slate-400 block">
+                              Mã Spec: {row.specRef}
+                            </span>
+                          </div>
+                          <span
+                            className={cn(
+                              'rounded-md px-2 py-0.5 font-mono text-[10px] font-bold shrink-0',
+                              perm === 'FULL' && 'bg-emerald-100 text-emerald-800 ring-1 ring-emerald-300',
+                              perm === 'SCOPED' && 'bg-blue-100 text-blue-800 ring-1 ring-blue-300',
+                              perm === 'READ' && 'bg-amber-100 text-amber-800 ring-1 ring-amber-300',
+                              perm === 'NONE' && 'bg-slate-100 text-slate-400',
+                            )}
+                          >
+                            {perm === 'FULL'
+                              ? 'TOÀN QUYỀN'
+                              : perm === 'SCOPED'
+                                ? 'THEO PHÂN CÔNG'
+                                : perm === 'READ'
+                                  ? 'CHỈ XEM'
+                                  : 'CHẶN (403)'}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              /* TAB CONTENT: FULL MATRIX TABLE */
+              <div className="mt-4 overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold text-slate-600 uppercase">
+                      <th className="px-3.5 py-3">Chức năng / Quyền hạn Nghiệp vụ</th>
+                      <th className="px-3 py-3 font-mono">Mã Spec</th>
+                      <th className="px-3 py-3 text-center">ADMIN</th>
+                      <th className="px-3 py-3 text-center">HIRING_MANAGER</th>
+                      <th className="px-3 py-3 text-center">HR</th>
+                      <th className="px-3 py-3 text-center">INTERVIEWER</th>
+                      <th className="px-3 py-3 text-center">CANDIDATE</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {RBAC_MATRIX.map((row) => (
+                      <tr key={row.capability} className="hover:bg-slate-50/70">
+                        <td className="px-3.5 py-2.5 font-semibold text-slate-900">
+                          {row.capability}
+                        </td>
+                        <td className="px-3 py-2.5 font-mono text-[11px] font-bold text-slate-500">
+                          {row.specRef}
+                        </td>
+                        {(
+                          ['ADMIN', 'HIRING_MANAGER', 'HR', 'INTERVIEWER', 'CANDIDATE'] as UserRole[]
+                        ).map((r) => {
+                          const perm = row.roles[r];
+                          return (
+                            <td key={r} className="px-3 py-2.5 text-center">
+                              <span
+                                className={cn(
+                                  'inline-block rounded-md px-2 py-0.5 font-mono text-[10px] font-bold',
+                                  perm === 'FULL' && 'bg-emerald-100 text-emerald-800',
+                                  perm === 'SCOPED' && 'bg-blue-100 text-blue-800',
+                                  perm === 'READ' && 'bg-amber-100 text-amber-800',
+                                  perm === 'NONE' && 'bg-slate-100 text-slate-400',
+                                )}
+                              >
+                                {perm === 'FULL'
+                                  ? 'TOÀN QUYỀN'
+                                  : perm === 'SCOPED'
+                                    ? 'THEO PHÂN CÔNG'
+                                    : perm === 'READ'
+                                      ? 'CHỈ XEM'
+                                      : 'CHẶN (403)'}
+                              </span>
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </div>
       )}
