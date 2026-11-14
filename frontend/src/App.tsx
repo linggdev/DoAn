@@ -269,6 +269,7 @@ export function App() {
   };
 
   const handleSubmitSheet = (candId: number, intId: number) => {
+    if (!currentUser) return;
     const cand = store.candidates.find((c) => c.id === candId);
     const sh = cand?.sheets.find((s) => s.interviewerId === intId);
     if (!cand || !sh) return;
