@@ -22,6 +22,7 @@ import {
   Info,
   KeyRound,
   Layers,
+  LayoutGrid,
   Lock,
   Plus,
   RefreshCw,
@@ -33,6 +34,7 @@ import {
   Sliders,
   Sparkles,
   Square,
+  Table as TableIcon,
   Terminal,
   Trash2,
   TrendingUp,
@@ -48,6 +50,7 @@ import React, { useMemo, useState } from 'react';
 import { ROLE_META, UserRole } from '@/components/animate-ui/animated-sidebar';
 import { GuardViolationState } from '@/components/animate-ui/guard-dialog';
 import { ModernSelect } from '@/components/animate-ui/modern-select';
+import { TablePagination } from '@/components/animate-ui/table-pagination';
 import { JobSetupView } from '@/components/portals/job-setup-view';
 import {
   AccountUser,
@@ -321,6 +324,9 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
   const [userSearch, setUserSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<'ALL' | UserRole>('ALL');
   const [statusFilter, setStatusFilter] = useState<'ALL' | 'ACTIVE' | 'INACTIVE'>('ALL');
+  const [userDeptFilter, setUserDeptFilter] = useState<'ALL' | string>('ALL');
+  const [userPage, setUserPage] = useState<number>(1);
+  const [userPageSize, setUserPageSize] = useState<number>(10);
   const [selectedUserIds, setSelectedUserIds] = useState<number[]>([]);
   const [healthCheckOpen, setHealthCheckOpen] = useState(false);
   const [dbSchemaModalOpen, setDbSchemaModalOpen] = useState(false);
@@ -350,6 +356,11 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
   // ---------------------------------------------------------------------------
   // STATE: DEPARTMENT MANAGEMENT (admin-departments)
   // ---------------------------------------------------------------------------
+  const [deptSearch, setDeptSearch] = useState('');
+  const [deptQuotaFilter, setDeptQuotaFilter] = useState<'ALL' | 'FULL' | 'HIRING' | 'NO_REQ'>('ALL');
+  const [deptViewMode, setDeptViewMode] = useState<'TABLE' | 'CARDS'>('TABLE');
+  const [deptPage, setDeptPage] = useState<number>(1);
+  const [deptPageSize, setDeptPageSize] = useState<number>(10);
   const [isCreateDeptOpen, setIsCreateDeptOpen] = useState(false);
   const [newDeptName, setNewDeptName] = useState('');
   const [newDeptManager, setNewDeptManager] = useState(
@@ -384,6 +395,8 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
   const [candidateAlertFilter, setCandidateAlertFilter] = useState<
     'ALL' | 'KNOCKOUT' | 'VARIANCE' | 'PENDING_OFFER' | 'HIRED'
   >('ALL');
+  const [govCandPage, setGovCandPage] = useState<number>(1);
+  const [govCandPageSize, setGovCandPageSize] = useState<number>(10);
 
   // ---------------------------------------------------------------------------
   // STATE: AUDIT LOGS & BACKUP (admin-audit)
@@ -393,6 +406,8 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
   const [auditCategoryFilter, setAuditCategoryFilter] = useState<
     'ALL' | 'IAM' | 'PIPELINE' | 'EVAL' | 'JOB'
   >('ALL');
+  const [auditPage, setAuditPage] = useState<number>(1);
+  const [auditPageSize, setAuditPageSize] = useState<number>(10);
   const [adminBanner, setAdminBanner] = useState<string | null>(null);
   const [copiedSql, setCopiedSql] = useState(false);
   const [clearAuditConfirmOpen, setClearAuditConfirmOpen] = useState(false);
@@ -436,11 +451,25 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
     };
   }, [store]);
 
+  const allDistinctDepartments = useMemo(() => {
+    const set = new Set<string>();
+    set.add('Executive & IT Governance');
+    set.add('People & Talent');
+    store.departments.forEach((d) => set.add(d.name));
+    store.users.forEach((u) => {
+      if (u.department && u.department !== 'Ứng viên bên ngoài') {
+        set.add(u.department);
+      }
+    });
+    return Array.from(set);
+  }, [store.departments, store.users]);
+
   const filteredUsers = useMemo(() => {
     const q = userSearch.trim().toLowerCase();
     return store.users.filter((u) => {
       if (roleFilter !== 'ALL' && u.role !== roleFilter) return false;
       if (statusFilter !== 'ALL' && u.status !== statusFilter) return false;
+      if (userDeptFilter !== 'ALL' && u.department !== userDeptFilter) return false;
       if (!q) return true;
       return (
         u.fullName.toLowerCase().includes(q) ||
@@ -449,7 +478,12 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
         u.department.toLowerCase().includes(q)
       );
     });
-  }, [store.users, userSearch, roleFilter, statusFilter]);
+  }, [store.users, userSearch, roleFilter, statusFilter, userDeptFilter]);
+
+  const paginatedUsers = useMemo(() => {
+    const start = (userPage - 1) * userPageSize;
+    return filteredUsers.slice(start, start + userPageSize);
+  }, [filteredUsers, userPage, userPageSize]);
 
   const enrichedDepartments = useMemo(() => {
     return store.departments.map((dept) => {
@@ -475,6 +509,26 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
       };
     });
   }, [store.departments, store.users, store.requisitions, store.jobs]);
+
+  const filteredDepartments = useMemo(() => {
+    const q = deptSearch.trim().toLowerCase();
+    return enrichedDepartments.filter((d) => {
+      if (deptQuotaFilter === 'FULL' && (d.totalHeadcount === 0 || d.totalFilled < d.totalHeadcount)) return false;
+      if (deptQuotaFilter === 'HIRING' && (d.totalHeadcount === 0 || d.totalFilled >= d.totalHeadcount)) return false;
+      if (deptQuotaFilter === 'NO_REQ' && d.totalHeadcount > 0) return false;
+      if (!q) return true;
+      return (
+        d.name.toLowerCase().includes(q) ||
+        d.managerName.toLowerCase().includes(q) ||
+        String(d.id).includes(q)
+      );
+    });
+  }, [enrichedDepartments, deptSearch, deptQuotaFilter]);
+
+  const paginatedDepartments = useMemo(() => {
+    const start = (deptPage - 1) * deptPageSize;
+    return filteredDepartments.slice(start, start + deptPageSize);
+  }, [filteredDepartments, deptPage, deptPageSize]);
 
   const filteredGovCandidates = useMemo(() => {
     const q = govCandidateSearch.trim().toLowerCase();
@@ -507,6 +561,11 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
     govStageFilter,
     candidateAlertFilter,
   ]);
+
+  const paginatedGovCandidates = useMemo(() => {
+    const start = (govCandPage - 1) * govCandPageSize;
+    return filteredGovCandidates.slice(start, start + govCandPageSize);
+  }, [filteredGovCandidates, govCandPage, govCandPageSize]);
 
   const filteredAuditLogs = useMemo(() => {
     const q = auditSearch.trim().toLowerCase();
@@ -560,6 +619,11 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
       );
     });
   }, [store.auditLogs, auditSearch, auditRoleFilter, auditCategoryFilter]);
+
+  const paginatedAuditLogs = useMemo(() => {
+    const start = (auditPage - 1) * auditPageSize;
+    return filteredAuditLogs.slice(start, start + auditPageSize);
+  }, [filteredAuditLogs, auditPage, auditPageSize]);
 
   // ---------------------------------------------------------------------------
   // HANDLERS
@@ -1593,22 +1657,52 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                 </p>
               </div>
 
-              {/* Search, Status Filter & Create User Action */}
+              {/* Search, Status & Department Filter & Create User Action */}
               <div className="flex flex-wrap items-center gap-2.5">
-                <div className="relative">
-                  <Search className="pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="text"
-                    value={userSearch}
-                    onChange={(e) => setUserSearch(e.target.value)}
-                    placeholder="Tìm tên, email, SĐT, phòng ban..."
-                    className="w-64 rounded-2xl border border-slate-200/90 bg-white py-1.5 pr-3 pl-8 text-xs shadow-2xs transition-all focus:border-amber-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-400/20"
-                  />
+                {/* Dedicated Search Input + Button */}
+                <div className="flex items-center gap-1.5">
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      value={userSearch}
+                      onChange={(e) => {
+                        setUserSearch(e.target.value);
+                        setUserPage(1);
+                      }}
+                      placeholder="Tìm tên, email, SĐT, phòng ban..."
+                      className="w-56 sm:w-64 rounded-2xl border border-slate-200/90 bg-white py-1.5 pr-8 pl-8 text-xs shadow-2xs transition-all focus:border-amber-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-400/20"
+                    />
+                    {userSearch && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setUserSearch('');
+                          setUserPage(1);
+                        }}
+                        className="absolute top-1/2 right-2.5 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer p-0.5 rounded-full hover:bg-slate-100"
+                        title="Xóa tìm kiếm"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setUserPage(1)}
+                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-2xl bg-slate-900 px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-slate-800 transition-all active:scale-95"
+                  >
+                    <Search className="h-3.5 w-3.5" />
+                    <span>Tìm kiếm</span>
+                  </button>
                 </div>
 
                 <ModernSelect<'ALL' | 'ACTIVE' | 'INACTIVE'>
                   value={statusFilter}
-                  onChange={(val) => setStatusFilter(val)}
+                  onChange={(val) => {
+                    setStatusFilter(val);
+                    setUserPage(1);
+                  }}
                   options={[
                     { value: 'ALL', label: 'Mọi trạng thái' },
                     {
@@ -1627,6 +1721,22 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                   triggerClassName="rounded-2xl"
                 />
 
+                <ModernSelect<string>
+                  value={userDeptFilter}
+                  onChange={(val) => {
+                    setUserDeptFilter(val);
+                    setUserPage(1);
+                  }}
+                  options={[
+                    { value: 'ALL', label: 'Tất cả phòng ban' },
+                    ...allDistinctDepartments.map((d) => ({
+                      value: d,
+                      label: d,
+                    })),
+                  ]}
+                  triggerClassName="rounded-2xl max-w-[200px]"
+                />
+
                 <button
                   type="button"
                   onClick={() => setIsCreateUserOpen(true)}
@@ -1639,7 +1749,7 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
             </div>
 
             {/* Active User Filters Pill & Quick Reset */}
-            {(userSearch.trim() !== '' || roleFilter !== 'ALL' || statusFilter !== 'ALL') && (
+            {(userSearch.trim() !== '' || roleFilter !== 'ALL' || statusFilter !== 'ALL' || userDeptFilter !== 'ALL') && (
               <div className="mt-4 flex flex-wrap items-center justify-between gap-2.5 rounded-2xl border border-amber-200/90 bg-amber-50/60 px-4 py-2 text-xs text-amber-950 shadow-2xs">
                 <div className="flex flex-wrap items-center gap-2">
                   <Filter className="h-3.5 w-3.5 text-amber-700" />
@@ -1662,6 +1772,11 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                       Trạng thái: <strong>{statusFilter}</strong>
                     </span>
                   )}
+                  {userDeptFilter !== 'ALL' && (
+                    <span className="rounded-lg border border-amber-300/80 bg-white/80 px-2 py-0.5 text-[11px] font-medium text-slate-700">
+                      Phòng ban: <strong>{userDeptFilter}</strong>
+                    </span>
+                  )}
                 </div>
                 <button
                   type="button"
@@ -1669,6 +1784,8 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                     setUserSearch('');
                     setRoleFilter('ALL');
                     setStatusFilter('ALL');
+                    setUserDeptFilter('ALL');
+                    setUserPage(1);
                   }}
                   className="inline-flex cursor-pointer items-center gap-1 rounded-xl bg-white px-3 py-1 text-[11px] font-bold text-amber-900 shadow-2xs hover:bg-amber-100 transition-all active:scale-95"
                 >
@@ -1792,7 +1909,7 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
-                  {filteredUsers.map((u) => {
+                  {paginatedUsers.map((u) => {
                     const isSelf = u.id === currentUser.id;
                     const isChecked = selectedUserIds.includes(u.id);
                     return (
@@ -2007,7 +2124,39 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                   })}
                 </tbody>
               </table>
+
+              {filteredUsers.length === 0 && (
+                <div className="py-12 text-center">
+                  <Users className="mx-auto h-8 w-8 text-slate-300" />
+                  <p className="mt-2 text-xs font-semibold text-slate-600">
+                    Không tìm thấy tài khoản nào khớp với điều kiện lọc hiện tại.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setUserSearch('');
+                      setRoleFilter('ALL');
+                      setStatusFilter('ALL');
+                      setUserDeptFilter('ALL');
+                      setUserPage(1);
+                    }}
+                    className="mt-2 inline-flex items-center gap-1 text-xs text-amber-600 font-bold hover:underline cursor-pointer"
+                  >
+                    <RotateCcw className="h-3 w-3" />
+                    Đặt lại toàn bộ bộ lọc
+                  </button>
+                </div>
+              )}
             </div>
+
+            <TablePagination
+              currentPage={userPage}
+              pageSize={userPageSize}
+              totalItems={filteredUsers.length}
+              onPageChange={setUserPage}
+              onPageSizeChange={setUserPageSize}
+              itemName="tài khoản IAM"
+            />
           </div>
         </div>
       )}
@@ -2017,177 +2166,511 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
          ===================================================================== */}
       {activeSection === 'admin-departments' && (
         <div className="space-y-5">
-          {/* Header Bar with Action Button */}
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
-            <div>
-              <h2 className="text-base font-bold text-slate-900">
-                Cơ Cấu Phòng Ban & Trưởng Bộ Phận (Organizational Structure — S2.10)
-              </h2>
-              <p className="text-xs text-slate-500">
-                Quản lý các phòng ban chuyên môn, chỉ định Hiring Manager, theo dõi định biên nhân sự và ràng buộc khóa ngoại (Referential Integrity).
-              </p>
+          {/* Header Bar with Action Button, Dedicated Search & Filters */}
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+              <div>
+                <h2 className="text-base font-bold text-slate-900">
+                  Cơ Cấu Phòng Ban & Trưởng Bộ Phận (Organizational Structure — S2.10)
+                </h2>
+                <p className="text-xs text-slate-500">
+                  Quản lý các phòng ban chuyên môn, chỉ định Hiring Manager, theo dõi định biên nhân sự và ràng buộc khóa ngoại (Referential Integrity).
+                </p>
+              </div>
+
+              {/* Action Buttons: Create New Dept */}
+              <button
+                type="button"
+                onClick={() => {
+                  setNewDeptName('');
+                  setIsCreateDeptOpen(true);
+                }}
+                className="inline-flex cursor-pointer items-center gap-2 rounded-2xl bg-amber-500 px-4 py-2 text-xs font-extrabold text-slate-950 shadow-md shadow-amber-500/20 hover:bg-amber-400 hover:shadow-lg transition-all active:scale-95"
+              >
+                <Plus className="h-4 w-4" />
+                Thêm Phòng Ban Mới
+              </button>
             </div>
 
-            <button
-              type="button"
-              onClick={() => {
-                setNewDeptName('');
-                setIsCreateDeptOpen(true);
-              }}
-              className="inline-flex cursor-pointer items-center gap-2 rounded-2xl bg-amber-500 px-4 py-2 text-xs font-extrabold text-slate-950 shadow-md shadow-amber-500/20 hover:bg-amber-400 hover:shadow-lg transition-all active:scale-95"
-            >
-              <Plus className="h-4 w-4" />
-              Thêm Phòng Ban Mới
-            </button>
-          </div>
-
-          {/* Department Cards Grid (Responsive 3 Columns) */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {enrichedDepartments.map((d) => {
-              return (
-                <div
-                  key={d.id}
-                  className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-xs"
-                >
-                  <div>
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="flex items-center gap-2.5">
-                        <span className="rounded-xl bg-amber-50 p-2.5 text-amber-600">
-                          <Building2 className="h-5 w-5" />
-                        </span>
-                        <div>
-                          <h3 className="text-base font-bold text-slate-900">{d.name}</h3>
-                          <p className="text-[11px] text-slate-500">
-                            Trưởng bộ phận:{' '}
-                            <strong className="text-slate-800">{d.managerName}</strong>
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setEditingDept(d);
-                            setEditDeptName(d.name);
-                            setEditDeptManager(d.managerName);
-                          }}
-                          className="cursor-pointer rounded-xl border border-slate-200/90 bg-white p-2 text-slate-600 shadow-2xs hover:border-slate-300 hover:bg-slate-50 transition-all active:scale-95"
-                          title="Chỉnh sửa Phòng ban"
-                        >
-                          <Edit3 className="h-3.5 w-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            if (d.actualMembers.length > 0) {
-                              onTriggerViolation({
-                                code: 'DEPARTMENT_HAS_MEMBERS',
-                                message: `Không thể xóa phòng ban "${d.name}" vì đang có ${d.actualMembers.length} tài khoản nội bộ trực thuộc. Vui lòng điều chuyển nhân sự sang phòng ban khác trước khi xóa.`,
-                                candidateName: d.name,
-                                fromStageName: 'Referential Integrity Guard (S2.10)',
-                                toStageName: 'Delete Department Blocked',
-                              });
-                              return;
-                            }
-                            if (d.actualRequisitions.length > 0) {
-                              onTriggerViolation({
-                                code: 'DEPARTMENT_HAS_REQUISITIONS',
-                                message: `Không thể xóa phòng ban "${d.name}" vì đang có ${d.actualRequisitions.length} phiếu định biên (Requisitions) liên kết.`,
-                                candidateName: d.name,
-                                fromStageName: 'Referential Integrity Guard (S2.10)',
-                                toStageName: 'Delete Department Blocked',
-                              });
-                              return;
-                            }
-                            if (d.actualJobs.length > 0) {
-                              onTriggerViolation({
-                                code: 'DEPARTMENT_HAS_JOBS',
-                                message: `Không thể xóa phòng ban "${d.name}" vì đang có ${d.actualJobs.length} chiến dịch tuyển dụng (Jobs) đang mở thuộc phòng ban này.`,
-                                candidateName: d.name,
-                                fromStageName: 'Referential Integrity Guard (S2.10)',
-                                toStageName: 'Delete Department Blocked',
-                              });
-                              return;
-                            }
-                            setDeleteConfirmDept({ id: d.id, name: d.name });
-                          }}
-                          className="cursor-pointer rounded-xl border border-red-200/90 bg-red-50/70 p-2 text-red-600 shadow-2xs hover:border-red-300 hover:bg-red-100 transition-all active:scale-95"
-                          title="Xóa Phòng ban an toàn"
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                    </div>
-
-                    {/* Department KPI Strip */}
-                    <div className="mt-4 grid grid-cols-3 gap-2 rounded-xl bg-slate-50 p-2.5 text-center text-xs">
-                      <div>
-                        <p className="text-[10px] font-semibold text-slate-400">NHÂN SỰ</p>
-                        <p className="font-mono text-sm font-extrabold text-slate-900">
-                          {d.actualMemberCount}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-semibold text-slate-400">REQUISITIONS</p>
-                        <p className="font-mono text-sm font-extrabold text-blue-600">
-                          {d.actualRequisitions.length}
-                        </p>
-                      </div>
-                      <div>
-                        <p className="text-[10px] font-semibold text-slate-400">ĐỊNH BIÊN</p>
-                        <p className="font-mono text-sm font-extrabold text-emerald-600">
-                          {d.totalFilled}/{d.totalHeadcount}
-                        </p>
-                      </div>
-                    </div>
-
-                    {/* Member Roster in this Department */}
-                    <div className="mt-3">
-                      <p className="text-[11px] font-bold text-slate-500">
-                        Tài khoản trực thuộc ({d.actualMembers.length}):
-                      </p>
-                      {d.actualMembers.length === 0 ? (
-                        <p className="mt-1 text-[11px] italic text-slate-400">
-                          Chưa có tài khoản nội bộ gắn trực tiếp.
-                        </p>
-                      ) : (
-                        <div className="mt-1.5 flex flex-wrap gap-1.5">
-                          {d.actualMembers.map((m) => (
-                            <span
-                              key={m.id}
-                              className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-700"
-                            >
-                              <strong className="font-mono text-[9px] text-amber-700">
-                                [{m.role}]
-                              </strong>{' '}
-                              {m.fullName}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  </div>
-
-                  <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs">
-                    <span className="font-semibold text-slate-500">
-                      Chiến dịch Job đang chạy: <strong>{d.actualJobs.length}</strong>
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setUserSearch(d.name);
-                        onSelectSection('admin-users');
+            {/* Search, Quota Filter & View Mode Controls */}
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div className="flex flex-wrap items-center gap-2.5">
+                {/* Dedicated Search Input + Button */}
+                <div className="flex items-center gap-1.5">
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      value={deptSearch}
+                      onChange={(e) => {
+                        setDeptSearch(e.target.value);
+                        setDeptPage(1);
                       }}
-                      className="cursor-pointer font-bold text-amber-700 hover:underline"
-                    >
-                      Xem nhân sự →
-                    </button>
+                      placeholder="Tìm phòng ban, Trưởng bộ phận..."
+                      className="w-56 sm:w-64 rounded-2xl border border-slate-200/90 bg-white py-1.5 pr-8 pl-8 text-xs shadow-2xs transition-all focus:border-amber-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-400/20"
+                    />
+                    {deptSearch && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setDeptSearch('');
+                          setDeptPage(1);
+                        }}
+                        className="absolute top-1/2 right-2.5 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer p-0.5 rounded-full hover:bg-slate-100"
+                        title="Xóa tìm kiếm"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    )}
                   </div>
+                  <button
+                    type="button"
+                    onClick={() => setDeptPage(1)}
+                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-2xl bg-slate-900 px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-slate-800 transition-all active:scale-95"
+                  >
+                    <Search className="h-3.5 w-3.5" />
+                    <span>Tìm kiếm</span>
+                  </button>
                 </div>
-              );
-            })}
+
+                {/* Quota Filter */}
+                <ModernSelect<'ALL' | 'FULL' | 'HIRING' | 'NO_REQ'>
+                  value={deptQuotaFilter}
+                  onChange={(val) => {
+                    setDeptQuotaFilter(val);
+                    setDeptPage(1);
+                  }}
+                  options={[
+                    { value: 'ALL', label: 'Mọi tiến độ định biên' },
+                    { value: 'HIRING', label: 'Đang tuyển dụng', badge: 'Đang tuyển', badgeColor: 'bg-emerald-50 text-emerald-700' },
+                    { value: 'FULL', label: 'Đã đủ định biên', badge: 'Đã đủ', badgeColor: 'bg-blue-50 text-blue-700' },
+                    { value: 'NO_REQ', label: 'Chưa có Requisition', badge: '0 Req', badgeColor: 'bg-slate-100 text-slate-600' },
+                  ]}
+                  triggerClassName="rounded-2xl"
+                />
+              </div>
+
+              {/* View Mode Toggle (Table vs Cards) */}
+              <div className="flex items-center gap-1 rounded-2xl border border-slate-200 bg-slate-50 p-1 shadow-2xs">
+                <button
+                  type="button"
+                  onClick={() => setDeptViewMode('TABLE')}
+                  className={cn(
+                    'inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all cursor-pointer',
+                    deptViewMode === 'TABLE'
+                      ? 'bg-white text-slate-900 shadow-2xs ring-1 ring-slate-900/5'
+                      : 'text-slate-500 hover:text-slate-800',
+                  )}
+                >
+                  <TableIcon className="h-3.5 w-3.5" />
+                  <span>Dạng Bảng</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDeptViewMode('CARDS')}
+                  className={cn(
+                    'inline-flex items-center gap-1.5 rounded-xl px-3 py-1.5 text-xs font-bold transition-all cursor-pointer',
+                    deptViewMode === 'CARDS'
+                      ? 'bg-white text-slate-900 shadow-2xs ring-1 ring-slate-900/5'
+                      : 'text-slate-500 hover:text-slate-800',
+                  )}
+                >
+                  <LayoutGrid className="h-3.5 w-3.5" />
+                  <span>Dạng Thẻ</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Active Department Filters Pill */}
+            {(deptSearch.trim() !== '' || deptQuotaFilter !== 'ALL') && (
+              <div className="flex flex-wrap items-center justify-between gap-2.5 rounded-2xl border border-amber-200/90 bg-amber-50/60 px-4 py-2 text-xs text-amber-950 shadow-2xs">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Filter className="h-3.5 w-3.5 text-amber-700" />
+                  <span className="font-semibold text-slate-800">Đang lọc phòng ban:</span>
+                  <span className="rounded-lg bg-white px-2 py-0.5 font-bold text-slate-900 shadow-2xs">
+                    {filteredDepartments.length} / {store.departments.length} phòng ban
+                  </span>
+                  {deptSearch.trim() && (
+                    <span className="rounded-lg border border-amber-300/80 bg-white/80 px-2 py-0.5 text-[11px] font-medium text-slate-700">
+                      Từ khóa: <strong>"{deptSearch.trim()}"</strong>
+                    </span>
+                  )}
+                  {deptQuotaFilter !== 'ALL' && (
+                    <span className="rounded-lg border border-amber-300/80 bg-white/80 px-2 py-0.5 text-[11px] font-medium text-slate-700">
+                      Tiến độ: <strong>{deptQuotaFilter}</strong>
+                    </span>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setDeptSearch('');
+                    setDeptQuotaFilter('ALL');
+                    setDeptPage(1);
+                  }}
+                  className="inline-flex cursor-pointer items-center gap-1 rounded-xl bg-white px-3 py-1 text-[11px] font-bold text-amber-900 shadow-2xs hover:bg-amber-100 transition-all active:scale-95"
+                >
+                  <RotateCcw className="h-3 w-3 text-amber-700" />
+                  Xóa bộ lọc
+                </button>
+              </div>
+            )}
           </div>
+
+          {/* Department Content: Table View vs Cards View */}
+          {filteredDepartments.length === 0 ? (
+            <div className="rounded-2xl border border-dashed border-slate-200 bg-white p-12 text-center shadow-xs">
+              <Building2 className="mx-auto h-8 w-8 text-slate-300" />
+              <p className="mt-2 text-xs font-semibold text-slate-600">
+                Không tìm thấy phòng ban nào khớp với điều kiện tìm kiếm và bộ lọc.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  setDeptSearch('');
+                  setDeptQuotaFilter('ALL');
+                  setDeptPage(1);
+                }}
+                className="mt-2 inline-flex items-center gap-1 text-xs text-amber-600 font-bold hover:underline cursor-pointer"
+              >
+                <RotateCcw className="h-3 w-3" />
+                Đặt lại bộ lọc
+              </button>
+            </div>
+          ) : deptViewMode === 'TABLE' ? (
+            /* Modern Table View */
+            <div className="rounded-2xl border border-slate-200 bg-white shadow-xs overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold text-slate-600 uppercase">
+                      <th className="px-4 py-3">Mã ID</th>
+                      <th className="px-4 py-3">Phòng Ban Chuyên Môn</th>
+                      <th className="px-4 py-3">Trưởng Bộ Phận (HM)</th>
+                      <th className="px-4 py-3">Nhân Sự Nội Bộ</th>
+                      <th className="px-4 py-3">Chiến Dịch & Requisitions</th>
+                      <th className="px-4 py-3">Lấp Đầy Định Biên</th>
+                      <th className="px-4 py-3 text-right">Thao Tác</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {paginatedDepartments.map((d) => {
+                      const fillPercent =
+                        d.totalHeadcount > 0 ? Math.min(100, Math.round((d.totalFilled / d.totalHeadcount) * 100)) : 0;
+                      return (
+                        <tr key={d.id} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="px-4 py-3.5 font-mono text-xs font-bold text-slate-500">
+                            #{d.id}
+                          </td>
+                          <td className="px-4 py-3.5">
+                            <div className="flex items-center gap-2.5">
+                              <span className="rounded-xl bg-amber-50 p-2 text-amber-600 shadow-2xs">
+                                <Building2 className="h-4 w-4" />
+                              </span>
+                              <div>
+                                <p className="font-bold text-slate-900">{d.name}</p>
+                                <p className="text-[11px] text-slate-400">
+                                  {d.actualJobs.length} Job đang tuyển dụng
+                                </p>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3.5">
+                            <span className="inline-flex items-center gap-1.5 rounded-full bg-slate-100 px-2.5 py-0.5 text-xs font-semibold text-slate-800">
+                              <strong className="text-amber-700 font-mono text-[10px]">HM</strong>
+                              {d.managerName}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3.5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setUserDeptFilter(d.name);
+                                onSelectSection('admin-users');
+                              }}
+                              className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
+                              title="Xem danh sách nhân sự phòng ban này"
+                            >
+                              <Users className="h-3.5 w-3.5 text-blue-500" />
+                              <span>{d.actualMembers.length} nhân sự</span>
+                            </button>
+                          </td>
+                          <td className="px-4 py-3.5">
+                            <div className="flex items-center gap-2">
+                              <span className="rounded bg-blue-50 px-2 py-0.5 font-mono text-[11px] font-bold text-blue-700">
+                                {d.actualJobs.length} Jobs
+                              </span>
+                              <span className="rounded bg-slate-100 px-2 py-0.5 font-mono text-[11px] font-bold text-slate-600">
+                                {d.actualRequisitions.length} Reqs
+                              </span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3.5 min-w-[160px]">
+                            {d.totalHeadcount > 0 ? (
+                              <div className="space-y-1">
+                                <div className="flex items-center justify-between text-[11px]">
+                                  <span className="font-mono font-bold text-slate-700">
+                                    {d.totalFilled} / {d.totalHeadcount}
+                                  </span>
+                                  <span
+                                    className={cn(
+                                      'font-mono font-extrabold text-[10px]',
+                                      fillPercent >= 100 ? 'text-blue-600' : 'text-emerald-600',
+                                    )}
+                                  >
+                                    {fillPercent}%
+                                  </span>
+                                </div>
+                                <div className="h-1.5 w-full overflow-hidden rounded-full bg-slate-100">
+                                  <div
+                                    className={cn(
+                                      'h-full rounded-full transition-all duration-300',
+                                      fillPercent >= 100 ? 'bg-blue-500' : 'bg-emerald-500',
+                                    )}
+                                    style={{ width: `${fillPercent}%` }}
+                                  />
+                                </div>
+                              </div>
+                            ) : (
+                              <span className="font-mono text-[11px] text-slate-400 italic">
+                                Chưa có định biên
+                              </span>
+                            )}
+                          </td>
+                          <td className="px-4 py-3.5 text-right">
+                            <div className="inline-flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setEditingDept(d);
+                                  setEditDeptName(d.name);
+                                  setEditDeptManager(d.managerName);
+                                }}
+                                className="cursor-pointer rounded-xl border border-slate-200/90 bg-white p-2 text-slate-600 shadow-2xs hover:border-slate-300 hover:bg-slate-50 transition-all active:scale-95"
+                                title="Chỉnh sửa Phòng ban"
+                              >
+                                <Edit3 className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  if (d.actualMembers.length > 0) {
+                                    onTriggerViolation({
+                                      code: 'DEPARTMENT_HAS_MEMBERS',
+                                      message: `Không thể xóa phòng ban "${d.name}" vì đang có ${d.actualMembers.length} tài khoản nội bộ trực thuộc. Vui lòng điều chuyển nhân sự sang phòng ban khác trước khi xóa.`,
+                                      candidateName: d.name,
+                                      fromStageName: 'Referential Integrity Guard (S2.10)',
+                                      toStageName: 'Delete Department Blocked',
+                                    });
+                                    return;
+                                  }
+                                  if (d.actualRequisitions.length > 0) {
+                                    onTriggerViolation({
+                                      code: 'DEPARTMENT_HAS_REQUISITIONS',
+                                      message: `Không thể xóa phòng ban "${d.name}" vì đang có ${d.actualRequisitions.length} phiếu định biên (Requisitions) liên kết.`,
+                                      candidateName: d.name,
+                                      fromStageName: 'Referential Integrity Guard (S2.10)',
+                                      toStageName: 'Delete Department Blocked',
+                                    });
+                                    return;
+                                  }
+                                  if (d.actualJobs.length > 0) {
+                                    onTriggerViolation({
+                                      code: 'DEPARTMENT_HAS_JOBS',
+                                      message: `Không thể xóa phòng ban "${d.name}" vì đang có ${d.actualJobs.length} chiến dịch tuyển dụng (Jobs) đang mở thuộc phòng ban này.`,
+                                      candidateName: d.name,
+                                      fromStageName: 'Referential Integrity Guard (S2.10)',
+                                      toStageName: 'Delete Department Blocked',
+                                    });
+                                    return;
+                                  }
+                                  setDeleteConfirmDept({ id: d.id, name: d.name });
+                                }}
+                                className="cursor-pointer rounded-xl border border-red-200/90 bg-red-50/70 p-2 text-red-600 shadow-2xs hover:border-red-300 hover:bg-red-100 transition-all active:scale-95"
+                                title="Xóa Phòng ban an toàn"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+
+              <TablePagination
+                currentPage={deptPage}
+                pageSize={deptPageSize}
+                totalItems={filteredDepartments.length}
+                onPageChange={setDeptPage}
+                onPageSizeChange={setDeptPageSize}
+                itemName="phòng ban"
+              />
+            </div>
+          ) : (
+            /* Modern Cards View */
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                {paginatedDepartments.map((d) => {
+                  return (
+                    <div
+                      key={d.id}
+                      className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-xs"
+                    >
+                      <div>
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="flex items-center gap-2.5">
+                            <span className="rounded-xl bg-amber-50 p-2.5 text-amber-600">
+                              <Building2 className="h-5 w-5" />
+                            </span>
+                            <div>
+                              <h3 className="text-base font-bold text-slate-900">{d.name}</h3>
+                              <p className="text-[11px] text-slate-500">
+                                Trưởng bộ phận:{' '}
+                                <strong className="text-slate-800">{d.managerName}</strong>
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setEditingDept(d);
+                                setEditDeptName(d.name);
+                                setEditDeptManager(d.managerName);
+                              }}
+                              className="cursor-pointer rounded-xl border border-slate-200/90 bg-white p-2 text-slate-600 shadow-2xs hover:border-slate-300 hover:bg-slate-50 transition-all active:scale-95"
+                              title="Chỉnh sửa Phòng ban"
+                            >
+                              <Edit3 className="h-3.5 w-3.5" />
+                            </button>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                if (d.actualMembers.length > 0) {
+                                  onTriggerViolation({
+                                    code: 'DEPARTMENT_HAS_MEMBERS',
+                                    message: `Không thể xóa phòng ban "${d.name}" vì đang có ${d.actualMembers.length} tài khoản nội bộ trực thuộc. Vui lòng điều chuyển nhân sự sang phòng ban khác trước khi xóa.`,
+                                    candidateName: d.name,
+                                    fromStageName: 'Referential Integrity Guard (S2.10)',
+                                    toStageName: 'Delete Department Blocked',
+                                  });
+                                  return;
+                                }
+                                if (d.actualRequisitions.length > 0) {
+                                  onTriggerViolation({
+                                    code: 'DEPARTMENT_HAS_REQUISITIONS',
+                                    message: `Không thể xóa phòng ban "${d.name}" vì đang có ${d.actualRequisitions.length} phiếu định biên (Requisitions) liên kết.`,
+                                    candidateName: d.name,
+                                    fromStageName: 'Referential Integrity Guard (S2.10)',
+                                    toStageName: 'Delete Department Blocked',
+                                  });
+                                  return;
+                                }
+                                if (d.actualJobs.length > 0) {
+                                  onTriggerViolation({
+                                    code: 'DEPARTMENT_HAS_JOBS',
+                                    message: `Không thể xóa phòng ban "${d.name}" vì đang có ${d.actualJobs.length} chiến dịch tuyển dụng (Jobs) đang mở thuộc phòng ban này.`,
+                                    candidateName: d.name,
+                                    fromStageName: 'Referential Integrity Guard (S2.10)',
+                                    toStageName: 'Delete Department Blocked',
+                                  });
+                                  return;
+                                }
+                                setDeleteConfirmDept({ id: d.id, name: d.name });
+                              }}
+                              className="cursor-pointer rounded-xl border border-red-200/90 bg-red-50/70 p-2 text-red-600 shadow-2xs hover:border-red-300 hover:bg-red-100 transition-all active:scale-95"
+                              title="Xóa Phòng ban an toàn"
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Department KPI Strip */}
+                        <div className="mt-4 grid grid-cols-3 gap-2 rounded-xl bg-slate-50 p-2.5 text-center text-xs">
+                          <div>
+                            <p className="text-[10px] font-semibold text-slate-400">NHÂN SỰ</p>
+                            <p className="font-mono text-sm font-extrabold text-slate-900">
+                              {d.actualMemberCount}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-semibold text-slate-400">REQUISITIONS</p>
+                            <p className="font-mono text-sm font-extrabold text-blue-600">
+                              {d.actualRequisitions.length}
+                            </p>
+                          </div>
+                          <div>
+                            <p className="text-[10px] font-semibold text-slate-400">ĐỊNH BIÊN</p>
+                            <p className="font-mono text-sm font-extrabold text-emerald-600">
+                              {d.totalFilled}/{d.totalHeadcount}
+                            </p>
+                          </div>
+                        </div>
+
+                        {/* Member Roster in this Department */}
+                        <div className="mt-3">
+                          <p className="text-[11px] font-bold text-slate-500">
+                            Tài khoản trực thuộc ({d.actualMembers.length}):
+                          </p>
+                          {d.actualMembers.length === 0 ? (
+                            <p className="mt-1 text-[11px] italic text-slate-400">
+                              Chưa có tài khoản nội bộ gắn trực tiếp.
+                            </p>
+                          ) : (
+                            <div className="mt-1.5 flex flex-wrap gap-1.5">
+                              {d.actualMembers.map((m) => (
+                                <span
+                                  key={m.id}
+                                  className="inline-flex items-center gap-1 rounded-lg border border-slate-200 bg-slate-50 px-2 py-0.5 text-[11px] font-medium text-slate-700"
+                                >
+                                  <strong className="font-mono text-[9px] text-amber-700">
+                                    [{m.role}]
+                                  </strong>{' '}
+                                  {m.fullName}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-3 text-xs">
+                        <span className="font-semibold text-slate-500">
+                          Chiến dịch Job đang chạy: <strong>{d.actualJobs.length}</strong>
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setUserDeptFilter(d.name);
+                            onSelectSection('admin-users');
+                          }}
+                          className="cursor-pointer font-bold text-amber-700 hover:underline"
+                        >
+                          Xem nhân sự →
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div className="rounded-2xl border border-slate-200 bg-white shadow-xs overflow-hidden">
+                <TablePagination
+                  currentPage={deptPage}
+                  pageSize={deptPageSize}
+                  totalItems={filteredDepartments.length}
+                  onPageChange={setDeptPage}
+                  onPageSizeChange={setDeptPageSize}
+                  itemName="phòng ban"
+                />
+              </div>
+            </div>
+          )}
         </div>
       )}
 
@@ -2520,22 +3003,52 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
 
                 {/* Search & Governance Multi-Filter (UI/UX PRO MAX Rounded-2xl Styling) */}
                 <div className="flex flex-wrap items-center gap-2.5">
-                  <div className="relative">
-                    <Search className="pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-                    <input
-                      type="text"
-                      value={govCandidateSearch}
-                      onChange={(e) => setGovCandidateSearch(e.target.value)}
-                      placeholder="Tìm tên, email, SĐT, mã token..."
-                      className="w-64 rounded-2xl border border-slate-200/90 bg-white py-1.5 pr-3 pl-8 text-xs shadow-2xs transition-all focus:border-amber-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-400/20"
-                    />
+                  {/* Dedicated Search Input + Button */}
+                  <div className="flex items-center gap-1.5">
+                    <div className="relative">
+                      <Search className="pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                      <input
+                        type="text"
+                        value={govCandidateSearch}
+                        onChange={(e) => {
+                          setGovCandidateSearch(e.target.value);
+                          setGovCandPage(1);
+                        }}
+                        placeholder="Tìm tên, email, SĐT, mã token..."
+                        className="w-56 sm:w-64 rounded-2xl border border-slate-200/90 bg-white py-1.5 pr-8 pl-8 text-xs shadow-2xs transition-all focus:border-amber-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-400/20"
+                      />
+                      {govCandidateSearch && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setGovCandidateSearch('');
+                            setGovCandPage(1);
+                          }}
+                          className="absolute top-1/2 right-2.5 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer p-0.5 rounded-full hover:bg-slate-100"
+                          title="Xóa tìm kiếm"
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      )}
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setGovCandPage(1)}
+                      className="inline-flex cursor-pointer items-center gap-1.5 rounded-2xl bg-slate-900 px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-slate-800 transition-all active:scale-95"
+                    >
+                      <Search className="h-3.5 w-3.5" />
+                      <span>Tìm kiếm</span>
+                    </button>
                   </div>
 
                   <ModernSelect<
                     'ALL' | 'KNOCKOUT' | 'VARIANCE' | 'PENDING_OFFER' | 'HIRED'
                   >
                     value={candidateAlertFilter}
-                    onChange={(val) => setCandidateAlertFilter(val)}
+                    onChange={(val) => {
+                      setCandidateAlertFilter(val);
+                      setGovCandPage(1);
+                    }}
                     options={[
                       { value: 'ALL', label: 'Mọi trạng thái cảnh báo' },
                       {
@@ -2553,7 +3066,10 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
 
                   <ModernSelect<number | 'ALL'>
                     value={govJobFilter}
-                    onChange={(val) => setGovJobFilter(val)}
+                    onChange={(val) => {
+                      setGovJobFilter(val);
+                      setGovCandPage(1);
+                    }}
                     options={[
                       { value: 'ALL', label: 'Tất cả Chiến dịch Job' },
                       ...store.jobs.map((j) => ({
@@ -2568,7 +3084,10 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
 
                   <ModernSelect<'ALL' | StageCode>
                     value={govStageFilter}
-                    onChange={(val) => setGovStageFilter(val)}
+                    onChange={(val) => {
+                      setGovStageFilter(val);
+                      setGovCandPage(1);
+                    }}
                     options={[
                       { value: 'ALL', label: 'Tất cả Vòng (Stages)' },
                       { value: 'APPLIED', label: 'APPLIED (Nộp đơn)' },
@@ -2584,6 +3103,56 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                 </div>
               </div>
 
+              {/* Active Filters Pill Bar */}
+              {(govCandidateSearch.trim() !== '' ||
+                candidateAlertFilter !== 'ALL' ||
+                govJobFilter !== 'ALL' ||
+                govStageFilter !== 'ALL') && (
+                <div className="mt-4 flex flex-wrap items-center justify-between gap-2.5 rounded-2xl border border-amber-200/90 bg-amber-50/60 px-4 py-2 text-xs text-amber-950 shadow-2xs">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Filter className="h-3.5 w-3.5 text-amber-700" />
+                    <span className="font-semibold text-slate-800">Đang lọc ứng viên:</span>
+                    <span className="rounded-lg bg-white px-2 py-0.5 font-bold text-slate-900 shadow-2xs">
+                      {filteredGovCandidates.length} / {store.candidates.length} ứng viên
+                    </span>
+                    {govCandidateSearch.trim() && (
+                      <span className="rounded-lg border border-amber-300/80 bg-white/80 px-2 py-0.5 text-[11px] font-medium text-slate-700">
+                        Từ khóa: <strong>"{govCandidateSearch.trim()}"</strong>
+                      </span>
+                    )}
+                    {candidateAlertFilter !== 'ALL' && (
+                      <span className="rounded-lg border border-amber-300/80 bg-white/80 px-2 py-0.5 text-[11px] font-medium text-slate-700">
+                        Cảnh báo: <strong>{candidateAlertFilter}</strong>
+                      </span>
+                    )}
+                    {govJobFilter !== 'ALL' && (
+                      <span className="rounded-lg border border-amber-300/80 bg-white/80 px-2 py-0.5 text-[11px] font-medium text-slate-700">
+                        Job: <strong>#{govJobFilter}</strong>
+                      </span>
+                    )}
+                    {govStageFilter !== 'ALL' && (
+                      <span className="rounded-lg border border-amber-300/80 bg-white/80 px-2 py-0.5 text-[11px] font-medium text-slate-700">
+                        Stage: <strong>{govStageFilter}</strong>
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setGovCandidateSearch('');
+                      setCandidateAlertFilter('ALL');
+                      setGovJobFilter('ALL');
+                      setGovStageFilter('ALL');
+                      setGovCandPage(1);
+                    }}
+                    className="inline-flex cursor-pointer items-center gap-1 rounded-xl bg-white px-3 py-1 text-[11px] font-bold text-amber-900 shadow-2xs hover:bg-amber-100 transition-all active:scale-95"
+                  >
+                    <RotateCcw className="h-3 w-3 text-amber-700" />
+                    Xóa bộ lọc
+                  </button>
+                </div>
+              )}
+
               <div className="mt-4 overflow-x-auto">
                 <table className="w-full text-left text-xs">
                   <thead>
@@ -2597,7 +3166,7 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100">
-                    {filteredGovCandidates.map((cand) => {
+                    {paginatedGovCandidates.map((cand) => {
                       const job = store.jobs.find((j) => j.id === cand.jobId) ?? selectedJob;
                       const m = computeCandidateMetrics(cand, job.criteria);
                       return (
@@ -2701,7 +3270,39 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                     })}
                   </tbody>
                 </table>
+
+                {filteredGovCandidates.length === 0 && (
+                  <div className="py-12 text-center">
+                    <Users className="mx-auto h-8 w-8 text-slate-300" />
+                    <p className="mt-2 text-xs font-semibold text-slate-600">
+                      Không tìm thấy ứng viên nào khớp với điều kiện tìm kiếm và bộ lọc.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setGovCandidateSearch('');
+                        setCandidateAlertFilter('ALL');
+                        setGovJobFilter('ALL');
+                        setGovStageFilter('ALL');
+                        setGovCandPage(1);
+                      }}
+                      className="mt-2 inline-flex items-center gap-1 text-xs text-amber-600 font-bold hover:underline cursor-pointer"
+                    >
+                      <RotateCcw className="h-3 w-3" />
+                      Đặt lại bộ lọc
+                    </button>
+                  </div>
+                )}
               </div>
+
+              <TablePagination
+                currentPage={govCandPage}
+                pageSize={govCandPageSize}
+                totalItems={filteredGovCandidates.length}
+                onPageChange={setGovCandPage}
+                onPageSizeChange={setGovCandPageSize}
+                itemName="ứng viên"
+              />
             </div>
           )}
         </div>
@@ -2829,20 +3430,50 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
 
               {/* Audit Search & Multi-Filters (UI/UX PRO MAX Rounded-2xl Styling) */}
               <div className="flex flex-wrap items-center gap-2.5">
-                <div className="relative">
-                  <Search className="pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
-                  <input
-                    type="text"
-                    value={auditSearch}
-                    onChange={(e) => setAuditSearch(e.target.value)}
-                    placeholder="Tìm mã sự kiện, người thực hiện..."
-                    className="w-56 rounded-2xl border border-slate-200/90 bg-white py-1.5 pr-3 pl-8 text-xs shadow-2xs transition-all focus:border-amber-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-400/20"
-                  />
+                {/* Dedicated Search Input + Button */}
+                <div className="flex items-center gap-1.5">
+                  <div className="relative">
+                    <Search className="pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
+                    <input
+                      type="text"
+                      value={auditSearch}
+                      onChange={(e) => {
+                        setAuditSearch(e.target.value);
+                        setAuditPage(1);
+                      }}
+                      placeholder="Tìm mã sự kiện, người thực hiện..."
+                      className="w-56 rounded-2xl border border-slate-200/90 bg-white py-1.5 pr-8 pl-8 text-xs shadow-2xs transition-all focus:border-amber-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-amber-400/20"
+                    />
+                    {auditSearch && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setAuditSearch('');
+                          setAuditPage(1);
+                        }}
+                        className="absolute top-1/2 right-2.5 -translate-y-1/2 text-slate-400 hover:text-slate-600 cursor-pointer p-0.5 rounded-full hover:bg-slate-100"
+                        title="Xóa tìm kiếm"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setAuditPage(1)}
+                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-2xl bg-slate-900 px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-slate-800 transition-all active:scale-95"
+                  >
+                    <Search className="h-3.5 w-3.5" />
+                    <span>Tìm kiếm</span>
+                  </button>
                 </div>
 
                 <ModernSelect<'ALL' | 'IAM' | 'PIPELINE' | 'EVAL' | 'JOB'>
                   value={auditCategoryFilter}
-                  onChange={(val) => setAuditCategoryFilter(val)}
+                  onChange={(val) => {
+                    setAuditCategoryFilter(val);
+                    setAuditPage(1);
+                  }}
                   options={[
                     { value: 'ALL', label: 'Mọi nhóm sự kiện' },
                     { value: 'IAM', label: 'Tài khoản & RBAC', badge: 'IAM', badgeColor: 'bg-amber-50 text-amber-800' },
@@ -2855,7 +3486,10 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
 
                 <ModernSelect<'ALL' | UserRole>
                   value={auditRoleFilter}
-                  onChange={(val) => setAuditRoleFilter(val)}
+                  onChange={(val) => {
+                    setAuditRoleFilter(val);
+                    setAuditPage(1);
+                  }}
                   options={[
                     { value: 'ALL', label: 'Mọi Role' },
                     { value: 'ADMIN', label: 'ADMIN (Quản trị)', badge: 'ADMIN', badgeColor: 'bg-amber-100 text-amber-900' },
@@ -2897,31 +3531,152 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
               </div>
             </div>
 
-            <div className="mt-4 space-y-2">
-              {filteredAuditLogs.length === 0 ? (
-                <div className="rounded-xl border border-dashed border-slate-200 p-8 text-center text-xs text-slate-400">
-                  Không tìm thấy bản ghi Audit Log nào khớp với bộ lọc hiện tại.
+            {/* Active Audit Filters Pill Bar */}
+            {(auditSearch.trim() !== '' || auditCategoryFilter !== 'ALL' || auditRoleFilter !== 'ALL') && (
+              <div className="mt-4 flex flex-wrap items-center justify-between gap-2.5 rounded-2xl border border-amber-200/90 bg-amber-50/60 px-4 py-2 text-xs text-amber-950 shadow-2xs">
+                <div className="flex flex-wrap items-center gap-2">
+                  <Filter className="h-3.5 w-3.5 text-amber-700" />
+                  <span className="font-semibold text-slate-800">Đang lọc nhật ký:</span>
+                  <span className="rounded-lg bg-white px-2 py-0.5 font-bold text-slate-900 shadow-2xs">
+                    {filteredAuditLogs.length} / {store.auditLogs.length} bản ghi
+                  </span>
+                  {auditSearch.trim() && (
+                    <span className="rounded-lg border border-amber-300/80 bg-white/80 px-2 py-0.5 text-[11px] font-medium text-slate-700">
+                      Từ khóa: <strong>"{auditSearch.trim()}"</strong>
+                    </span>
+                  )}
+                  {auditCategoryFilter !== 'ALL' && (
+                    <span className="rounded-lg border border-amber-300/80 bg-white/80 px-2 py-0.5 text-[11px] font-medium text-slate-700">
+                      Nhóm: <strong>{auditCategoryFilter}</strong>
+                    </span>
+                  )}
+                  {auditRoleFilter !== 'ALL' && (
+                    <span className="rounded-lg border border-amber-300/80 bg-white/80 px-2 py-0.5 text-[11px] font-medium text-slate-700">
+                      Role: <strong>{auditRoleFilter}</strong>
+                    </span>
+                  )}
                 </div>
-              ) : (
-                filteredAuditLogs.map((log) => (
-                  <div
-                    key={log.id}
-                    className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-slate-200/80 bg-slate-50/70 px-4 py-3 text-xs"
-                  >
-                    <div className="flex flex-wrap items-center gap-2.5">
-                      <span className="rounded-md bg-slate-900 px-2 py-0.5 font-mono text-[10px] font-bold text-white">
-                        {log.action}
-                      </span>
-                      <span className="rounded bg-amber-100 px-1.5 py-0.5 font-mono text-[10px] font-bold text-amber-800">
-                        {log.actorRole}
-                      </span>
-                      <span className="font-bold text-slate-900">{log.actorName}</span>
-                      <span className="text-slate-600">— {log.detail}</span>
-                    </div>
-                    <span className="font-mono text-[11px] text-slate-400">{log.time}</span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuditSearch('');
+                    setAuditCategoryFilter('ALL');
+                    setAuditRoleFilter('ALL');
+                    setAuditPage(1);
+                  }}
+                  className="inline-flex cursor-pointer items-center gap-1 rounded-xl bg-white px-3 py-1 text-[11px] font-bold text-amber-900 shadow-2xs hover:bg-amber-100 transition-all active:scale-95"
+                >
+                  <RotateCcw className="h-3 w-3 text-amber-700" />
+                  Xóa bộ lọc
+                </button>
+              </div>
+            )}
+
+            {/* Structured Table Layout for Immutable Audit Logs */}
+            <div className="mt-4 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xs">
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold text-slate-600 uppercase">
+                      <th className="px-4 py-3">Thời Gian Ghi Nhận</th>
+                      <th className="px-4 py-3">Mã & Nhóm Sự Kiện</th>
+                      <th className="px-4 py-3">Người Thực Hiện</th>
+                      <th className="px-4 py-3">Vai Trò</th>
+                      <th className="px-4 py-3">Chi Tiết Sự Kiện (Audit Payload)</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {paginatedAuditLogs.map((log) => {
+                      const isIam = log.action.includes('USER') || log.action.includes('ROLE') || log.action.includes('DEPT');
+                      const isPipeline = log.action.includes('STAGE') || log.action.includes('OFFER') || log.action.includes('HIRE');
+                      const isEval = log.action.includes('SCORECARD') || log.action.includes('CALIBRAT');
+                      return (
+                        <tr key={log.id} className="hover:bg-slate-50/80 transition-colors">
+                          <td className="px-4 py-3 whitespace-nowrap font-mono text-[11px] text-slate-500">
+                            <div className="flex items-center gap-1.5">
+                              <Clock className="h-3 w-3 text-slate-400" />
+                              <span>{log.time}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <div className="flex items-center gap-1.5">
+                              <span className="rounded-md bg-slate-900 px-2 py-0.5 font-mono text-[10px] font-bold text-white shadow-2xs">
+                                {log.action}
+                              </span>
+                              {isIam && (
+                                <span className="rounded bg-amber-100 px-1.5 py-0.2 font-mono text-[9px] font-bold text-amber-800">
+                                  IAM
+                                </span>
+                              )}
+                              {isPipeline && (
+                                <span className="rounded bg-emerald-100 px-1.5 py-0.2 font-mono text-[9px] font-bold text-emerald-800">
+                                  PIPELINE
+                                </span>
+                              )}
+                              {isEval && (
+                                <span className="rounded bg-purple-100 px-1.5 py-0.2 font-mono text-[9px] font-bold text-purple-800">
+                                  EVAL
+                                </span>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <span className="font-bold text-slate-900">{log.actorName}</span>
+                          </td>
+                          <td className="px-4 py-3 whitespace-nowrap">
+                            <span
+                              className={cn(
+                                'rounded px-2 py-0.5 font-mono text-[10px] font-bold',
+                                log.actorRole === 'ADMIN' && 'bg-amber-100 text-amber-900',
+                                log.actorRole === 'HIRING_MANAGER' && 'bg-emerald-100 text-emerald-900',
+                                log.actorRole === 'HR' && 'bg-blue-100 text-blue-900',
+                                log.actorRole === 'INTERVIEWER' && 'bg-violet-100 text-violet-900',
+                                log.actorRole === 'CANDIDATE' && 'bg-sky-100 text-sky-900',
+                              )}
+                            >
+                              {log.actorRole}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-slate-700 leading-relaxed max-w-xl">
+                            {log.detail}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+
+                {filteredAuditLogs.length === 0 && (
+                  <div className="py-12 text-center">
+                    <FileCode className="mx-auto h-8 w-8 text-slate-300" />
+                    <p className="mt-2 text-xs font-semibold text-slate-600">
+                      Không tìm thấy bản ghi Audit Log nào khớp với bộ lọc hiện tại.
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setAuditSearch('');
+                        setAuditCategoryFilter('ALL');
+                        setAuditRoleFilter('ALL');
+                        setAuditPage(1);
+                      }}
+                      className="mt-2 inline-flex items-center gap-1 text-xs text-amber-600 font-bold hover:underline cursor-pointer"
+                    >
+                      <RotateCcw className="h-3 w-3" />
+                      Đặt lại bộ lọc
+                    </button>
                   </div>
-                ))
-              )}
+                )}
+              </div>
+
+              <TablePagination
+                currentPage={auditPage}
+                pageSize={auditPageSize}
+                totalItems={filteredAuditLogs.length}
+                onPageChange={setAuditPage}
+                onPageSizeChange={setAuditPageSize}
+                itemName="bản ghi nhật ký"
+              />
             </div>
           </div>
         </div>
