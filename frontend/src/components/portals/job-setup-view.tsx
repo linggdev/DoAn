@@ -66,7 +66,9 @@ export const JobSetupView: React.FC<JobSetupViewProps> = ({
   }, [selectedJob]);
 
   const totalWeight = draftCriteria.reduce((sum, c) => sum + c.weightPercent, 0);
+  const isJobLocked = jobApplicationsCount > 0;
   const canEditJob = currentUser.role === 'HR' || currentUser.role === 'ADMIN';
+  const canEditJobConfig = canEditJob && !isJobLocked;
 
   return (
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
@@ -247,22 +249,33 @@ export const JobSetupView: React.FC<JobSetupViewProps> = ({
               Chỉ tiêu Định biên (`headcount` — Tự đóng khi đủ D13):
             </span>
             <div className="mt-2 flex gap-1.5">
-              {[1, 2, 3, 5].map((hc) => (
-                <button
-                  key={hc}
-                  type="button"
-                  disabled={!canEditJob}
-                  onClick={() => onUpdateJobConfig(selectedJob.id, { headcount: hc })}
-                  className={cn(
-                    'cursor-pointer rounded-lg px-3 py-1.5 font-mono font-bold transition-all',
-                    selectedJob.headcount === hc
-                      ? 'bg-blue-600 text-white shadow-xs'
-                      : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-100',
-                  )}
-                >
-                  {hc} người
-                </button>
-              ))}
+              {[1, 2, 3, 5].map((hc) => {
+                const isBelowFilled = hc < selectedJob.filledCount;
+                return (
+                  <button
+                    key={hc}
+                    type="button"
+                    disabled={!canEditJob || isBelowFilled}
+                    onClick={() => onUpdateJobConfig(selectedJob.id, { headcount: hc })}
+                    title={
+                      isBelowFilled
+                        ? `Không thể giảm chỉ tiêu xuống dưới số lượng đã tuyển (${selectedJob.filledCount})`
+                        : undefined
+                    }
+                    className={cn(
+                      'rounded-lg px-3 py-1.5 font-mono font-bold transition-all',
+                      isBelowFilled
+                        ? 'cursor-not-allowed border border-slate-200 bg-slate-100 text-slate-400 opacity-60'
+                        : 'cursor-pointer',
+                      selectedJob.headcount === hc
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : !isBelowFilled && 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-100',
+                    )}
+                  >
+                    {hc} người
+                  </button>
+                );
+              })}
             </div>
           </div>
 
@@ -275,10 +288,16 @@ export const JobSetupView: React.FC<JobSetupViewProps> = ({
                 <button
                   key={th}
                   type="button"
-                  disabled={!canEditJob}
+                  disabled={!canEditJobConfig}
                   onClick={() => onUpdateJobConfig(selectedJob.id, { passScoreThreshold: th })}
+                  title={
+                    isJobLocked
+                      ? `Đã có ${jobApplicationsCount} đơn — Ngưỡng điểm chuẩn bị khóa bảo vệ (S2.7)`
+                      : undefined
+                  }
                   className={cn(
-                    'cursor-pointer rounded-lg px-3 py-1.5 font-mono font-bold transition-all',
+                    'rounded-lg px-3 py-1.5 font-mono font-bold transition-all',
+                    !canEditJobConfig ? 'cursor-not-allowed opacity-70' : 'cursor-pointer',
                     selectedJob.passScoreThreshold === th
                       ? 'bg-slate-900 text-white shadow-xs'
                       : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-100',
@@ -306,10 +325,21 @@ export const JobSetupView: React.FC<JobSetupViewProps> = ({
             {canEditJob && (
               <button
                 type="button"
+                disabled={isJobLocked}
                 onClick={() => onSaveStages(selectedJob.id, draftStages)}
-                className="cursor-pointer rounded-lg bg-slate-900 px-3 py-1.5 text-[11px] font-bold text-white hover:bg-blue-600"
+                title={
+                  isJobLocked
+                    ? `Đã có ${jobApplicationsCount} đơn — Cấu hình vòng bị khóa bảo vệ (S2.7)`
+                    : 'Lưu Cấu Hình Vòng'
+                }
+                className={cn(
+                  'rounded-lg px-3 py-1.5 text-[11px] font-bold transition-all',
+                  isJobLocked
+                    ? 'cursor-not-allowed bg-slate-200 text-slate-500'
+                    : 'cursor-pointer bg-slate-900 text-white hover:bg-blue-600',
+                )}
               >
-                Lưu Cấu Hình Vòng
+                {isJobLocked ? 'Vòng Bị Khóa (S2.7)' : 'Lưu Cấu Hình Vòng'}
               </button>
             )}
           </div>
@@ -329,7 +359,7 @@ export const JobSetupView: React.FC<JobSetupViewProps> = ({
                   <input
                     type="checkbox"
                     checked={st.enabled}
-                    disabled={!canEditJob}
+                    disabled={!canEditJobConfig}
                     onChange={(e) => {
                       const nextEnabled = e.target.checked;
                       setDraftStages((prev) =>
@@ -342,7 +372,7 @@ export const JobSetupView: React.FC<JobSetupViewProps> = ({
                   <input
                     type="text"
                     value={st.name}
-                    disabled={!canEditJob}
+                    disabled={!canEditJobConfig}
                     onChange={(e) => {
                       const nextName = e.target.value;
                       setDraftStages((prev) =>
@@ -392,7 +422,7 @@ export const JobSetupView: React.FC<JobSetupViewProps> = ({
               >
                 Tổng = {totalWeight}% / 100%
               </span>
-              {canEditJob && (
+              {canEditJobConfig && (
                 <button
                   type="button"
                   onClick={() =>
@@ -424,7 +454,7 @@ export const JobSetupView: React.FC<JobSetupViewProps> = ({
                 <div className="flex-1 min-w-[200px]">
                   <input
                     type="text"
-                    disabled={!canEditJob}
+                    disabled={!canEditJobConfig}
                     value={c.name}
                     onChange={(e) => {
                       const val = e.target.value;
@@ -437,7 +467,7 @@ export const JobSetupView: React.FC<JobSetupViewProps> = ({
                   <label className="mt-1.5 inline-flex cursor-pointer items-center gap-1.5 text-[11px] text-slate-600">
                     <input
                       type="checkbox"
-                      disabled={!canEditJob}
+                      disabled={!canEditJobConfig}
                       checked={c.isKnockout}
                       onChange={(e) => {
                         const checked = e.target.checked;
@@ -457,7 +487,7 @@ export const JobSetupView: React.FC<JobSetupViewProps> = ({
                     type="number"
                     min={1}
                     max={100}
-                    disabled={!canEditJob}
+                    disabled={!canEditJobConfig}
                     value={c.weightPercent}
                     onChange={(e) => {
                       const val = Number(e.target.value) || 0;
@@ -470,7 +500,7 @@ export const JobSetupView: React.FC<JobSetupViewProps> = ({
                     className="w-16 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-right font-mono font-extrabold text-blue-700 tabular-nums"
                   />
                   <span className="font-mono font-bold text-slate-500">%</span>
-                  {canEditJob && draftCriteria.length > 1 && (
+                  {canEditJobConfig && draftCriteria.length > 1 && (
                     <button
                       type="button"
                       onClick={() =>
@@ -489,10 +519,23 @@ export const JobSetupView: React.FC<JobSetupViewProps> = ({
           {canEditJob && (
             <button
               type="button"
+              disabled={isJobLocked}
               onClick={() => onSaveCriteria(selectedJob.id, draftCriteria)}
-              className="mt-3 w-full cursor-pointer rounded-xl bg-blue-600 py-2.5 font-bold text-white shadow-md hover:bg-blue-700"
+              title={
+                isJobLocked
+                  ? `Đã có ${jobApplicationsCount} đơn — Barem tiêu chí bị khóa bảo vệ (S2.7)`
+                  : 'Kiểm Tra & Lưu Bộ Tiêu Chí Chấm Điểm'
+              }
+              className={cn(
+                'mt-3 w-full rounded-xl py-2.5 font-bold shadow-md transition-all',
+                isJobLocked
+                  ? 'cursor-not-allowed bg-slate-200 text-slate-500 shadow-none'
+                  : 'cursor-pointer bg-blue-600 text-white hover:bg-blue-700',
+              )}
             >
-              Kiểm Tra & Lưu Bộ Tiêu Chí Chấm Điểm (Bắt buộc Tổng = 100% — S2.8)
+              {isJobLocked
+                ? `Barem Đã Bị Khóa Bảo Vệ (S2.7 — Đã có ${jobApplicationsCount} hồ sơ)`
+                : 'Kiểm Tra & Lưu Bộ Tiêu Chí Chấm Điểm (Bắt buộc Tổng = 100% — S2.8)'}
             </button>
           )}
         </div>

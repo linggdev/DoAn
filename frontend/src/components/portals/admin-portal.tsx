@@ -1,4 +1,4 @@
-import {
+ import {
   Activity,
   AlertTriangle,
   Award,
@@ -1864,9 +1864,20 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
               }
               onSelectJob={onSelectJobId}
               onCreateRequisition={(title, headcount, salaryRange) => {
+                if (!title.trim()) return;
+                if (!Number.isInteger(headcount) || headcount <= 0) {
+                  onTriggerViolation({
+                    code: 'REQ_INVALID_HEADCOUNT',
+                    message: 'Số lượng cần tuyển (headcount) phải là số nguyên lớn hơn 0 (S2.3).',
+                    candidateName: title,
+                    fromStageName: 'Tạo Requisition',
+                    toStageName: `headcount = ${headcount}`,
+                  });
+                  return;
+                }
                 const newReq: RequisitionItem = {
                   id: Math.floor(500 + Math.random() * 499),
-                  title,
+                  title: title.trim(),
                   department: currentUser.department || 'Engineering',
                   requestedBy: currentUser.fullName,
                   headcount,
@@ -1882,7 +1893,7 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                 }));
                 appendAudit(
                   'ADMIN_CREATE_REQ',
-                  `Admin tạo & phê duyệt Requisition "${newReq.title}"`,
+                  `Admin tạo & phê duyệt Requisition "${newReq.title}" (headcount = ${headcount})`,
                 );
                 notifyBanner(`Đã tạo và duyệt ngay Requisition "${newReq.title}"!`);
               }}
@@ -1897,6 +1908,26 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                 notifyBanner(`Đã cập nhật trạng thái Requisition #${reqId} sang ${decision}!`);
               }}
               onCreateJobFromReq={(req) => {
+                if (req.status !== 'APPROVED') {
+                  onTriggerViolation({
+                    code: 'REQ_NOT_APPROVED',
+                    message: 'Yêu cầu tuyển dụng phải được duyệt (APPROVED) trước khi tạo Job (S2.5).',
+                    candidateName: req.title,
+                    fromStageName: req.status,
+                    toStageName: 'APPROVED',
+                  });
+                  return;
+                }
+                if (req.hasJobId || store.jobs.some((j) => j.requisitionId === req.id)) {
+                  onTriggerViolation({
+                    code: 'REQ_ALREADY_HAS_JOB',
+                    message: 'Yêu cầu tuyển dụng này đã liên kết với một Job đang chạy (quan hệ 1–1 theo S2.5, D14). Không thể tạo thêm Job thứ hai!',
+                    candidateName: req.title,
+                    fromStageName: 'Requisition 1-1',
+                    toStageName: 'Duplicate Job Rejected',
+                  });
+                  return;
+                }
                 const newJobId = Math.floor(1000 + Math.random() * 900);
                 const createdJob: JobItem = {
                   id: newJobId,
@@ -1906,7 +1937,7 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                   description: `Tuyển dụng vị trí ${req.title} cho phòng ban ${req.department}.`,
                   requirements: 'Kinh nghiệm thực chiến, tư duy hệ thống và phối hợp nhóm tốt.',
                   salaryRange: req.salaryRange,
-                  status: 'PUBLISHED',
+                  status: 'DRAFT',
                   headcount: req.headcount,
                   filledCount: 0,
                   passScoreThreshold: 3.5,
@@ -1922,22 +1953,56 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                   ),
                 }));
                 onSelectJobId(newJobId);
-                appendAudit('ADMIN_CREATE_JOB', `Admin khởi tạo Job #${newJobId} (${req.title})`);
-                notifyBanner(`Đã khởi tạo và xuất bản Job #${newJobId} (${req.title})!`);
+                appendAudit('ADMIN_CREATE_JOB', `Admin khởi tạo Job #${newJobId} (${req.title}) ở trạng thái DRAFT`);
+                notifyBanner(`Đã khởi tạo Job #${newJobId} (${req.title}) ở trạng thái DRAFT!`);
               }}
               onUpdateJobConfig={(jobId, patch) => {
                 const target = store.jobs.find((j) => j.id === jobId);
                 if (!target) return;
-                const sum = target.criteria.reduce((s, c) => s + c.weightPercent, 0);
-                if (patch.status === 'PUBLISHED' && (target.criteria.length === 0 || sum !== 100)) {
+                const hasApplicants = store.candidates.some((c) => c.jobId === jobId);
+                if (hasApplicants && patch.passScoreThreshold !== undefined && patch.passScoreThreshold !== target.passScoreThreshold) {
                   onTriggerViolation({
-                    code: 'JOB_CRITERIA_WEIGHT_INVALID',
-                    message: `Không thể xuất bản Job "${target.title}" vì tổng trọng số tiêu chí hiện tại là ${sum}% (Bắt buộc đúng 100% — S2.9).`,
+                    code: 'JOB_CONFIG_LOCKED_APPLICANTS',
+                    message: `Không thể thay đổi ngưỡng điểm vì Job "${target.title}" đã có ${store.candidates.filter(c => c.jobId === jobId).length} ứng viên nộp hồ sơ (S2.7, FR-202). Cấu hình đã bị khóa bảo vệ!`,
                     candidateName: target.title,
-                    fromStageName: target.status,
-                    toStageName: 'PUBLISHED',
+                    fromStageName: `${target.passScoreThreshold}`,
+                    toStageName: `${patch.passScoreThreshold}`,
                   });
                   return;
+                }
+                if (patch.headcount !== undefined && patch.headcount < target.filledCount) {
+                  onTriggerViolation({
+                    code: 'JOB_HEADCOUNT_BELOW_FILLED',
+                    message: `Không thể giảm chỉ tiêu tuyển dụng (${patch.headcount}) xuống thấp hơn số lượng đã tuyển (${target.filledCount})!`,
+                    candidateName: target.title,
+                    fromStageName: `${target.filledCount} đã tuyển`,
+                    toStageName: `Chỉ tiêu ${patch.headcount}`,
+                  });
+                  return;
+                }
+                if (patch.status === 'PUBLISHED') {
+                  const sum = target.criteria.reduce((s, c) => s + c.weightPercent, 0);
+                  if (target.criteria.length === 0 || sum !== 100) {
+                    onTriggerViolation({
+                      code: 'JOB_NOT_PUBLISHABLE',
+                      message: `Không thể xuất bản Job "${target.title}" vì tổng trọng số tiêu chí hiện tại là ${sum}% (Bắt buộc có ít nhất 1 tiêu chí và tổng đúng 100% — S2.9, S2.11).`,
+                      candidateName: target.title,
+                      fromStageName: target.status,
+                      toStageName: 'PUBLISHED',
+                    });
+                    return;
+                  }
+                  const req = store.requisitions.find((r) => r.id === target.requisitionId);
+                  if (req && req.status !== 'APPROVED') {
+                    onTriggerViolation({
+                      code: 'JOB_NOT_PUBLISHABLE',
+                      message: `Không thể xuất bản Job vì yêu cầu định biên liên kết (#${req.id}) chưa ở trạng thái ĐÃ DUYỆT (APPROVED — S2.11).`,
+                      candidateName: target.title,
+                      fromStageName: req.status,
+                      toStageName: 'APPROVED',
+                    });
+                    return;
+                  }
                 }
                 setStore((prev) => ({
                   ...prev,
@@ -1950,6 +2015,29 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                 notifyBanner(`Đã cập nhật cấu hình Job #${jobId}!`);
               }}
               onSaveStages={(jobId: number, stages: StageDef[]) => {
+                const target = store.jobs.find((j) => j.id === jobId);
+                const hasApplicants = store.candidates.some((c) => c.jobId === jobId);
+                if (hasApplicants) {
+                  onTriggerViolation({
+                    code: 'JOB_CONFIG_LOCKED_APPLICANTS',
+                    message: `Không thể thay đổi cấu hình vòng tuyển dụng vì Job "${target?.title ?? jobId}" đã có ${store.candidates.filter(c => c.jobId === jobId).length} ứng viên nộp hồ sơ (S2.7, FR-202). Cấu hình đã bị khóa bảo vệ!`,
+                    candidateName: target?.title ?? `Job #${jobId}`,
+                    fromStageName: 'Lưu cấu hình vòng',
+                    toStageName: 'Bị khóa bảo vệ',
+                  });
+                  return;
+                }
+                const mandatoryDisabled = stages.find((s) => s.mandatory && !s.enabled);
+                if (mandatoryDisabled) {
+                  onTriggerViolation({
+                    code: 'STAGE_REQUIRED',
+                    message: `Vòng "${mandatoryDisabled.name}" (${mandatoryDisabled.code}) là vòng bắt buộc, không được phép tắt (S2.6, D07).`,
+                    candidateName: target?.title ?? `Job #${jobId}`,
+                    fromStageName: mandatoryDisabled.code,
+                    toStageName: 'DISABLED',
+                  });
+                  return;
+                }
                 setStore((prev) => ({
                   ...prev,
                   jobs: prev.jobs.map((j) => (j.id === jobId ? { ...j, stages } : j)),
@@ -1958,12 +2046,60 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                 notifyBanner(`Đã lưu cấu hình các vòng tuyển dụng của Job #${jobId}!`);
               }}
               onSaveCriteria={(jobId: number, criteria: CriterionDef[]) => {
+                const target = store.jobs.find((j) => j.id === jobId);
+                const hasApplicants = store.candidates.some((c) => c.jobId === jobId);
+                if (hasApplicants) {
+                  onTriggerViolation({
+                    code: 'JOB_CONFIG_LOCKED_APPLICANTS',
+                    message: `Không thể thay đổi Barem tiêu chí vì Job "${target?.title ?? jobId}" đã có ${store.candidates.filter(c => c.jobId === jobId).length} ứng viên nộp hồ sơ (S2.7). Toàn bộ tiêu chí đã bị khóa bảo vệ!`,
+                    candidateName: target?.title ?? `Job #${jobId}`,
+                    fromStageName: 'Lưu Barem tiêu chí',
+                    toStageName: 'Bị khóa bảo vệ',
+                  });
+                  return;
+                }
+                if (!Array.isArray(criteria) || criteria.length === 0) {
+                  onTriggerViolation({
+                    code: 'CRITERIA_INVALID',
+                    message: 'Cần ít nhất 1 tiêu chí chấm điểm (S2.8).',
+                    candidateName: target?.title ?? `Job #${jobId}`,
+                  });
+                  return;
+                }
+                const names = criteria.map((c) => c.name.trim().toLowerCase());
+                if (names.some((n) => !n)) {
+                  onTriggerViolation({
+                    code: 'CRITERIA_INVALID',
+                    message: 'Tên tiêu chí không được để trống (S2.10).',
+                    candidateName: target?.title ?? `Job #${jobId}`,
+                  });
+                  return;
+                }
+                if (new Set(names).size !== names.length) {
+                  onTriggerViolation({
+                    code: 'CRITERIA_INVALID',
+                    message: 'Tên các tiêu chí chấm điểm trong cùng một Job không được trùng nhau (S2.10).',
+                    candidateName: target?.title ?? `Job #${jobId}`,
+                  });
+                  return;
+                }
+                const outOfRange = criteria.find(
+                  (c) => !Number.isInteger(c.weightPercent) || c.weightPercent < 1 || c.weightPercent > 100,
+                );
+                if (outOfRange) {
+                  onTriggerViolation({
+                    code: 'CRITERIA_INVALID',
+                    message: `Trọng số của tiêu chí "${outOfRange.name}" phải là số nguyên từ 1% đến 100% (S2.10).`,
+                    candidateName: target?.title ?? `Job #${jobId}`,
+                  });
+                  return;
+                }
                 const sum = criteria.reduce((s, c) => s + c.weightPercent, 0);
                 if (sum !== 100) {
                   onTriggerViolation({
-                    code: 'CRITERIA_WEIGHT_SUM_INVALID',
-                    message: `Tổng trọng số các tiêu chí phải đúng bằng 100% (hiện tại: ${sum}% — S2.9).`,
-                    candidateName: selectedJob.title,
+                    code: 'CRITERIA_WEIGHT_SUM',
+                    message: `Tổng trọng số các tiêu chí phải đúng bằng 100% (hiện tại: ${sum}% — S2.8). Dữ liệu tiêu chí cũ được giữ nguyên!`,
+                    candidateName: target?.title ?? `Job #${jobId}`,
                     fromStageName: `${sum}%`,
                     toStageName: '100%',
                   });

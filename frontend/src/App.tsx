@@ -1502,6 +1502,17 @@ export function App() {
                       });
                       return;
                     }
+                    if (req.hasJobId || store.jobs.some((j) => j.requisitionId === req.id)) {
+                      setViolation({
+                        open: true,
+                        code: 'REQ_ALREADY_HAS_JOB',
+                        message: 'Yêu cầu tuyển dụng này đã liên kết với một Job đang chạy (quan hệ 1–1 theo S2.5, D14). Không thể tạo thêm Job thứ hai!',
+                        candidateName: req.title,
+                        fromStageName: 'Requisition 1-1',
+                        toStageName: 'Duplicate Job Rejected',
+                      });
+                      return;
+                    }
                     const newJobId = Date.now();
                     const newJob: JobItem = {
                       id: newJobId,
@@ -1536,6 +1547,29 @@ export function App() {
                   onUpdateJobConfig={(jobId, patch) => {
                     const target = store.jobs.find((j) => j.id === jobId);
                     if (!target) return;
+                    const hasApplicants = store.candidates.some((c) => c.jobId === jobId);
+                    if (hasApplicants && patch.passScoreThreshold !== undefined && patch.passScoreThreshold !== target.passScoreThreshold) {
+                      setViolation({
+                        open: true,
+                        code: 'JOB_CONFIG_LOCKED_APPLICANTS',
+                        message: `Không thể thay đổi ngưỡng điểm vì Job "${target.title}" đã có ${store.candidates.filter(c => c.jobId === jobId).length} ứng viên nộp hồ sơ (S2.7, FR-202). Cấu hình đã bị khóa bảo vệ!`,
+                        candidateName: target.title,
+                        fromStageName: `${target.passScoreThreshold}`,
+                        toStageName: `${patch.passScoreThreshold}`,
+                      });
+                      return;
+                    }
+                    if (patch.headcount !== undefined && patch.headcount < target.filledCount) {
+                      setViolation({
+                        open: true,
+                        code: 'JOB_HEADCOUNT_BELOW_FILLED',
+                        message: `Không thể giảm chỉ tiêu tuyển dụng (${patch.headcount}) xuống thấp hơn số lượng đã tuyển (${target.filledCount})!`,
+                        candidateName: target.title,
+                        fromStageName: `${target.filledCount} đã tuyển`,
+                        toStageName: `Chỉ tiêu ${patch.headcount}`,
+                      });
+                      return;
+                    }
                     if (patch.status === 'PUBLISHED') {
                       const sum = target.criteria.reduce((a, b) => a + b.weightPercent, 0);
                       if (target.criteria.length === 0 || sum !== 100) {
@@ -1549,6 +1583,18 @@ export function App() {
                         });
                         return;
                       }
+                      const req = store.requisitions.find((r) => r.id === target.requisitionId);
+                      if (req && req.status !== 'APPROVED') {
+                        setViolation({
+                          open: true,
+                          code: 'JOB_NOT_PUBLISHABLE',
+                          message: `Không thể xuất bản Job vì yêu cầu định biên liên kết (#${req.id}) chưa ở trạng thái ĐÃ DUYỆT (APPROVED — S2.11).`,
+                          candidateName: target.title,
+                          fromStageName: req.status,
+                          toStageName: 'APPROVED',
+                        });
+                        return;
+                      }
                     }
                     setStore((prev) => ({
                       ...prev,
@@ -1557,13 +1603,26 @@ export function App() {
                     appendAudit('UPDATE_JOB', `Cập nhật cấu hình Job #${jobId}`);
                   }}
                   onSaveStages={(jobId, stages) => {
+                    const target = store.jobs.find((j) => j.id === jobId);
+                    const hasApplicants = store.candidates.some((c) => c.jobId === jobId);
+                    if (hasApplicants) {
+                      setViolation({
+                        open: true,
+                        code: 'JOB_CONFIG_LOCKED_APPLICANTS',
+                        message: `Không thể thay đổi cấu hình vòng tuyển dụng vì Job "${target?.title ?? jobId}" đã có ${store.candidates.filter(c => c.jobId === jobId).length} ứng viên nộp hồ sơ (S2.7, FR-202). Cấu hình đã bị khóa bảo vệ!`,
+                        candidateName: target?.title ?? `Job #${jobId}`,
+                        fromStageName: 'Lưu cấu hình vòng',
+                        toStageName: 'Bị khóa bảo vệ',
+                      });
+                      return;
+                    }
                     const mandatoryDisabled = stages.find((s) => s.mandatory && !s.enabled);
                     if (mandatoryDisabled) {
                       setViolation({
                         open: true,
                         code: 'STAGE_REQUIRED',
                         message: `Vòng "${mandatoryDisabled.name}" (${mandatoryDisabled.code}) là vòng bắt buộc, không được phép tắt (S2.6, D07).`,
-                        candidateName: selectedJob.title,
+                        candidateName: target?.title ?? selectedJob.title,
                         fromStageName: mandatoryDisabled.code,
                         toStageName: 'DISABLED',
                       });
@@ -1576,25 +1635,68 @@ export function App() {
                     appendAudit('UPDATE_STAGES', `Lưu cấu hình vòng tuyển dụng cho Job #${jobId}`);
                   }}
                   onSaveCriteria={(jobId, criteriaList) => {
+                    const target = store.jobs.find((j) => j.id === jobId);
+                    const hasApplicants = store.candidates.some((c) => c.jobId === jobId);
+                    if (hasApplicants) {
+                      setViolation({
+                        open: true,
+                        code: 'JOB_CONFIG_LOCKED_APPLICANTS',
+                        message: `Không thể thay đổi Barem tiêu chí vì Job "${target?.title ?? jobId}" đã có ${store.candidates.filter(c => c.jobId === jobId).length} ứng viên nộp hồ sơ (S2.7). Toàn bộ tiêu chí đã bị khóa bảo vệ!`,
+                        candidateName: target?.title ?? `Job #${jobId}`,
+                        fromStageName: 'Lưu Barem tiêu chí',
+                        toStageName: 'Bị khóa bảo vệ',
+                      });
+                      return;
+                    }
+                    if (!Array.isArray(criteriaList) || criteriaList.length === 0) {
+                      setViolation({
+                        open: true,
+                        code: 'CRITERIA_INVALID',
+                        message: 'Cần ít nhất 1 tiêu chí chấm điểm (S2.8).',
+                        candidateName: target?.title ?? `Job #${jobId}`,
+                      });
+                      return;
+                    }
+                    const names = criteriaList.map((c) => c.name.trim().toLowerCase());
+                    if (names.some((n) => !n)) {
+                      setViolation({
+                        open: true,
+                        code: 'CRITERIA_INVALID',
+                        message: 'Tên tiêu chí không được để trống (S2.10).',
+                        candidateName: target?.title ?? `Job #${jobId}`,
+                      });
+                      return;
+                    }
+                    if (new Set(names).size !== names.length) {
+                      setViolation({
+                        open: true,
+                        code: 'CRITERIA_INVALID',
+                        message: 'Tên các tiêu chí chấm điểm trong cùng một Job không được trùng nhau (S2.10).',
+                        candidateName: target?.title ?? selectedJob.title,
+                      });
+                      return;
+                    }
+                    const outOfRange = criteriaList.find(
+                      (c) => !Number.isInteger(c.weightPercent) || c.weightPercent < 1 || c.weightPercent > 100,
+                    );
+                    if (outOfRange) {
+                      setViolation({
+                        open: true,
+                        code: 'CRITERIA_INVALID',
+                        message: `Trọng số của tiêu chí "${outOfRange.name}" phải là số nguyên từ 1% đến 100% (S2.10).`,
+                        candidateName: target?.title ?? selectedJob.title,
+                      });
+                      return;
+                    }
                     const sum = criteriaList.reduce((a, b) => a + b.weightPercent, 0);
                     if (sum !== 100) {
                       setViolation({
                         open: true,
                         code: 'CRITERIA_WEIGHT_SUM',
                         message: `Tổng trọng số các tiêu chí phải bằng đúng 100% (Hiện tại đang là ${sum}% — S2.8). Dữ liệu tiêu chí cũ được giữ nguyên!`,
-                        candidateName: selectedJob.title,
+                        candidateName: target?.title ?? selectedJob.title,
                         fromStageName: `${sum}%`,
                         toStageName: '100%',
-                      });
-                      return;
-                    }
-                    const names = criteriaList.map((c) => c.name.trim().toLowerCase());
-                    if (new Set(names).size !== names.length) {
-                      setViolation({
-                        open: true,
-                        code: 'CRITERIA_INVALID',
-                        message: 'Tên các tiêu chí chấm điểm trong cùng một Job không được trùng nhau (S2.10).',
-                        candidateName: selectedJob.title,
                       });
                       return;
                     }
