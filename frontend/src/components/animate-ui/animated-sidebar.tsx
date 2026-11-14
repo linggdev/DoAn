@@ -96,6 +96,7 @@ export const ROLE_NAV_CONFIG: Record<UserRole, RoleNavItem[]> = {
   HIRING_MANAGER: [
     { id: 'hm-offers', label: 'Hàng đợi Duyệt Offer', badge: 'Ưu tiên', icon: CheckCircle2 },
     { id: 'hm-requisitions', label: 'Yêu cầu Định biên (Requisitions)', icon: FileCheck2 },
+    { id: 'hm-pipeline', label: 'Tiến độ Tuyển dụng', icon: Users },
     { id: 'hm-calibration', label: 'Calibration Phòng ban (Δ ≥ 2.0)', icon: Scale },
     { id: 'hm-studio', label: 'Chấm điểm Phỏng vấn', icon: ClipboardCheck },
   ],

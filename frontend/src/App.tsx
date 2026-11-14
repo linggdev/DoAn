@@ -1,16 +1,4 @@
 import {
-  DndContext,
-  DragEndEvent,
-  DragOverlay,
-  DragStartEvent,
-  PointerSensor,
-  useDraggable,
-  useDroppable,
-  useSensor,
-  useSensors,
-} from '@dnd-kit/core';
-import { CSS } from '@dnd-kit/utilities';
-import {
   AlertTriangle,
   ArrowRight,
   Building2,
@@ -60,6 +48,8 @@ import {
 import { AdminPortalView } from '@/components/portals/admin-portal';
 import { CandidatePortalView } from '@/components/portals/candidate-portal';
 import { EvaluationStudioView } from '@/components/portals/evaluation-studio';
+import { HiringManagerPortalView } from '@/components/portals/hiring-manager-portal';
+import { HrPortalView } from '@/components/portals/hr-portal';
 import { JobSetupView } from '@/components/portals/job-setup-view';
 import {
   AccountUser,
@@ -84,204 +74,6 @@ import {
   StageDef,
 } from '@/lib/store';
 import { cn } from '@/lib/utils';
-
-type KanbanFilterType = 'ALL' | 'RETURNING' | 'VARIANCE' | 'KNOCKOUT' | 'PENDING_OFFER';
-
-const DraggableKanbanCard: React.FC<{
-  card: CandidateCardData;
-  stage: StageDef;
-  enabledStages: StageDef[];
-  criteria: CriterionDef[];
-  passThreshold: number;
-  onAttemptMove: (candidateId: number, toStageCode: StageCode) => void;
-  onOpen360: (candidateId: number) => void;
-}> = ({
-  card,
-  stage,
-  enabledStages,
-  criteria,
-  passThreshold,
-  onAttemptMove,
-  onOpen360,
-}) => {
-  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
-    id: `card-${card.id}`,
-    data: { candidateId: card.id, fromStageCode: card.stageCode },
-  });
-
-  const style = transform
-    ? {
-        transform: CSS.Translate.toString(transform),
-      }
-    : undefined;
-
-  const m = computeCandidateMetrics(card, criteria);
-  const nonTerminalOrdered = enabledStages
-    .filter((s) => s.code !== 'REJECTED')
-    .sort((a, b) => a.order - b.order);
-  const currIdx = nonTerminalOrdered.findIndex((s) => s.code === stage.code);
-  const nextStageObj =
-    currIdx >= 0 && currIdx + 1 < nonTerminalOrdered.length
-      ? nonTerminalOrdered[currIdx + 1]
-      : undefined;
-
-  return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      className={cn(
-        'group relative flex flex-col justify-between rounded-2xl border bg-white p-3.5 shadow-xs transition-all hover:shadow-md',
-        isDragging && 'z-40 scale-105 rotate-1 opacity-85 shadow-2xl ring-2 ring-blue-500',
-        m.isDisqualified
-          ? 'border-red-300 ring-1 ring-red-100'
-          : m.hasVarianceAlert && !card.calibrated
-            ? 'border-amber-300 ring-1 ring-amber-100'
-            : 'border-slate-200/90',
-      )}
-    >
-      <div>
-        <div className="mb-2 flex items-start justify-between gap-1.5">
-          <div className="flex flex-wrap items-center gap-1">
-            {card.isReturningCandidate && (
-              <span
-                title={card.previousApplicationsNote}
-                className="inline-flex items-center gap-1 rounded-md border border-amber-300 bg-amber-50 px-1.5 py-0.5 text-[10px] font-bold text-amber-800"
-              >
-                Ứng viên cũ
-              </span>
-            )}
-            {m.isDisqualified && (
-              <span className="inline-flex items-center gap-1 rounded-md bg-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
-                <ShieldAlert className="h-3 w-3" />
-                Điểm liệt
-              </span>
-            )}
-            {m.hasVarianceAlert && !m.isDisqualified && (
-              <span
-                className={cn(
-                  'inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-bold',
-                  card.calibrated
-                    ? 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-300'
-                    : 'bg-amber-100 text-amber-900 ring-1 ring-amber-400',
-                )}
-              >
-                <AlertTriangle className="h-3 w-3" />
-                {card.calibrated ? 'Đã Calibration' : 'Lệch Δ ≥ 2.0'}
-              </span>
-            )}
-          </div>
-
-          <button
-            type="button"
-            {...listeners}
-            {...attributes}
-            title="Giữ chuột để kéo-thả thẻ sang cột khác"
-            className="cursor-grab rounded-lg p-1 text-slate-400 hover:bg-slate-100 hover:text-slate-700 active:cursor-grabbing"
-          >
-            <GripVertical className="h-4 w-4" />
-          </button>
-        </div>
-
-        <h3 className="text-xs font-bold text-slate-900">{card.fullName}</h3>
-        <p className="mt-0.5 line-clamp-2 text-[11px] text-slate-500">{card.experience}</p>
-
-        <div className="mt-2.5 flex items-center justify-between rounded-xl bg-slate-50 px-2.5 py-1.5 text-[11px]">
-          <span className="font-medium text-slate-600">
-            HĐ:{' '}
-            <strong className="font-mono text-slate-900 tabular-nums">
-              {m.submittedCount}/{m.panelSize}
-            </strong>
-          </span>
-          {m.allSubmitted && m.overallScore !== null ? (
-            <span
-              className={cn(
-                'font-mono font-bold tabular-nums',
-                m.isDisqualified
-                  ? 'text-red-600'
-                  : m.overallScore >= passThreshold
-                    ? 'text-emerald-600'
-                    : 'text-amber-600',
-              )}
-            >
-              S = {m.overallScore.toFixed(2)}
-            </span>
-          ) : (
-            <span className="inline-flex items-center gap-1 font-semibold text-blue-600">
-              <Lock className="h-3 w-3" />
-              Blind Lock
-            </span>
-          )}
-        </div>
-
-        {card.stageCode === 'OFFER' && (
-          <div className="mt-2 flex items-center justify-between rounded-xl border border-slate-200 px-2.5 py-1.5 text-[10px]">
-            <span className="font-semibold text-slate-600">HM Duyệt Offer:</span>
-            {card.offerApprovedByHm ? (
-              <span className="inline-flex items-center gap-1 font-bold text-emerald-700">
-                <CheckCircle2 className="h-3 w-3" />
-                Đã duyệt
-              </span>
-            ) : (
-              <span className="font-bold text-amber-700">Chờ HM duyệt</span>
-            )}
-          </div>
-        )}
-      </div>
-
-      <div className="mt-3 flex items-center gap-1.5 border-t border-slate-100 pt-2.5">
-        {nextStageObj && card.stageCode !== 'HIRED' && card.stageCode !== 'REJECTED' && (
-          <button
-            type="button"
-            onClick={() => onAttemptMove(card.id, nextStageObj.code)}
-            className="flex-1 cursor-pointer rounded-lg border border-amber-300 bg-amber-50 px-2 py-1.5 text-[11px] font-bold text-amber-950 transition-colors hover:bg-amber-100 active:scale-95 shadow-2xs"
-          >
-            → {nextStageObj.code}
-          </button>
-        )}
-        <button
-          type="button"
-          onClick={() => onOpen360(card.id)}
-          className="cursor-pointer rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1.5 text-[10px] font-bold text-blue-700 hover:bg-blue-100"
-        >
-          Hồ sơ 360°
-        </button>
-      </div>
-    </div>
-  );
-};
-
-const DroppableKanbanColumn: React.FC<{
-  stage: StageDef;
-  children: React.ReactNode;
-  count: number;
-}> = ({ stage, children, count }) => {
-  const { isOver, setNodeRef } = useDroppable({
-    id: `stage-${stage.code}`,
-    data: { stageCode: stage.code },
-  });
-
-  return (
-    <div
-      ref={setNodeRef}
-      className={cn(
-        'flex min-h-[520px] flex-col rounded-2xl border p-3 transition-all',
-        isOver
-          ? 'border-blue-500 bg-blue-50/60 ring-2 ring-blue-500/20'
-          : stage.code === 'REJECTED'
-            ? 'border-rose-200/80 bg-rose-50/35'
-            : 'border-slate-200/90 bg-slate-100/75',
-      )}
-    >
-      <div className="mb-3 flex items-center justify-between px-1">
-        <span className="text-xs font-bold text-slate-800">{stage.name}</span>
-        <span className="rounded-lg bg-white px-2 py-0.5 font-mono text-xs font-bold text-slate-700 shadow-2xs ring-1 ring-slate-200 tabular-nums">
-          {count}
-        </span>
-      </div>
-      <div className="flex-1 space-y-2.5">{children}</div>
-    </div>
-  );
-};
 
 export function App() {
   // Persistent State Store (localStorage)
@@ -322,10 +114,6 @@ export function App() {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [selectedJobId, setSelectedJobId] = useState<number>(1001);
 
-  // Kanban Search & Filter State
-  const [kanbanSearch, setKanbanSearch] = useState('');
-  const [kanbanFilter, setKanbanFilter] = useState<KanbanFilterType>('ALL');
-
   // Modals & Drawers State
   const [violation, setViolation] = useState<GuardViolationState | null>(null);
   const [candidate360Id, setCandidate360Id] = useState<number | null>(null);
@@ -347,14 +135,6 @@ export function App() {
   // Evaluation Studio Selected Candidate
   const [selectedEvalCandidateId, setSelectedEvalCandidateId] = useState<number>(103);
 
-  // Drag & Drop Sensors
-  const sensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: { distance: 6 },
-    }),
-  );
-  const [activeDragCardId, setActiveDragCardId] = useState<number | null>(null);
-
   const selectedJob: JobItem = useMemo(
     () => store.jobs.find((j) => j.id === selectedJobId) ?? store.jobs[0],
     [store.jobs, selectedJobId],
@@ -364,27 +144,6 @@ export function App() {
     () => store.candidates.filter((c) => c.jobId === selectedJob.id),
     [store.candidates, selectedJob.id],
   );
-
-  const filteredKanbanCandidates = useMemo(() => {
-    return jobCandidates.filter((c) => {
-      const q = kanbanSearch.trim().toLowerCase();
-      if (
-        q &&
-        !c.fullName.toLowerCase().includes(q) &&
-        !c.email.toLowerCase().includes(q) &&
-        !c.phone.includes(q) &&
-        !c.experience.toLowerCase().includes(q)
-      ) {
-        return false;
-      }
-      const m = computeCandidateMetrics(c, selectedJob.criteria);
-      if (kanbanFilter === 'RETURNING') return c.isReturningCandidate;
-      if (kanbanFilter === 'VARIANCE') return m.hasVarianceAlert && !c.calibrated;
-      if (kanbanFilter === 'KNOCKOUT') return m.isDisqualified;
-      if (kanbanFilter === 'PENDING_OFFER') return c.stageCode === 'OFFER' && !c.offerApprovedByHm;
-      return true;
-    });
-  }, [jobCandidates, kanbanSearch, kanbanFilter, selectedJob.criteria]);
 
   const candidate360 = useMemo(
     () => store.candidates.find((c) => c.id === candidate360Id) ?? null,
@@ -432,6 +191,130 @@ export function App() {
         ...prev.auditLogs,
       ],
     }));
+  };
+
+  const handleUpdateSheetScore = (
+    candId: number,
+    intId: number,
+    critId: number,
+    score: number,
+  ) => {
+    setStore((prev) => ({
+      ...prev,
+      candidates: prev.candidates.map((c) =>
+        c.id !== candId
+          ? c
+          : {
+              ...c,
+              sheets: c.sheets.map((sh) =>
+                sh.interviewerId === intId && !sh.submitted
+                  ? { ...sh, scores: { ...sh.scores, [critId]: score } }
+                  : sh,
+              ),
+            },
+      ),
+    }));
+  };
+
+  const handleUpdateSheetCriterionComment = (
+    candId: number,
+    intId: number,
+    critId: number,
+    comment: string,
+  ) => {
+    setStore((prev) => ({
+      ...prev,
+      candidates: prev.candidates.map((c) =>
+        c.id !== candId
+          ? c
+          : {
+              ...c,
+              sheets: c.sheets.map((sh) =>
+                sh.interviewerId === intId && !sh.submitted
+                  ? {
+                      ...sh,
+                      criterionComments: {
+                        ...sh.criterionComments,
+                        [critId]: comment,
+                      },
+                    }
+                  : sh,
+              ),
+            },
+      ),
+    }));
+  };
+
+  const handleUpdateSheetMeta = (
+    candId: number,
+    intId: number,
+    recommendation: RecommendationType,
+    overallComment: string,
+  ) => {
+    setStore((prev) => ({
+      ...prev,
+      candidates: prev.candidates.map((c) =>
+        c.id !== candId
+          ? c
+          : {
+              ...c,
+              sheets: c.sheets.map((sh) =>
+                sh.interviewerId === intId && !sh.submitted
+                  ? { ...sh, recommendation, comment: overallComment }
+                  : sh,
+              ),
+            },
+      ),
+    }));
+  };
+
+  const handleSubmitSheet = (candId: number, intId: number) => {
+    const cand = store.candidates.find((c) => c.id === candId);
+    const sh = cand?.sheets.find((s) => s.interviewerId === intId);
+    if (!cand || !sh) return;
+    if (sh.submitted) {
+      setViolation({
+        open: true,
+        code: 'EVAL_ALREADY_SUBMITTED',
+        message: `Phiếu chấm điểm của "${sh.interviewerName}" đã được nộp trước đó. Theo quy tắc D06 (S4.3), phiếu đã nộp là bất biến và không được phép chỉnh sửa!`,
+        candidateName: cand.fullName,
+        fromStageName: sh.interviewerName,
+        toStageName: 'IMMUTABLE SCORECARD',
+      });
+      return;
+    }
+    const ts = nowFormatted();
+    setStore((prev) => ({
+      ...prev,
+      candidates: prev.candidates.map((c) =>
+        c.id !== candId
+          ? c
+          : {
+              ...c,
+              sheets: c.sheets.map((item) =>
+                item.interviewerId === intId
+                  ? { ...item, submitted: true, submittedAt: ts }
+                  : item,
+              ),
+              logs: [
+                ...c.logs,
+                {
+                  id: Date.now(),
+                  fromStageCode: c.stageCode,
+                  toStageCode: c.stageCode,
+                  actorName: currentUser.fullName,
+                  actorRole: currentUser.role,
+                  note: `Giám khảo ${currentUser.fullName} đã nộp phiếu chấm điểm độc lập (${sh.recommendation})`,
+                  createdAt: ts,
+                },
+              ],
+            },
+      ),
+    }));
+    appendAudit(
+      'SUBMIT_SCORECARD',
+      `Giám khảo ${sh.interviewerName} nộp phiếu chấm cho ứng viên ${cand.fullName} (${sh.recommendation})`,
+    );
   };
 
   const handleLoginSubmit = (e: React.FormEvent) => {
@@ -869,20 +752,6 @@ export function App() {
     appendAudit('CANCEL_INTERVIEW', `Hủy lịch phỏng vấn của ${cand.fullName} (chưa ai nộp phiếu)`);
   };
 
-  const handleDragStart = (event: DragStartEvent) => {
-    const id = event.active.data.current?.candidateId as number | undefined;
-    if (id) setActiveDragCardId(id);
-  };
-
-  const handleDragEnd = (event: DragEndEvent) => {
-    setActiveDragCardId(null);
-    const candidateId = event.active.data.current?.candidateId as number | undefined;
-    const toStageCode = event.over?.data.current?.stageCode as StageCode | undefined;
-    if (candidateId && toStageCode) {
-      handleAttemptMoveStage(candidateId, toStageCode);
-    }
-  };
-
   // ============================================================================
   // RENDER 1: UNAUTHENTICATED -> STRICT LOGIN & REGISTER SCREEN (NO BYPASS)
   // ============================================================================
@@ -1201,7 +1070,6 @@ export function App() {
   // ============================================================================
   const currentMeta = ROLE_META[currentUser.role];
   const pendingOffers = store.candidates.filter((c) => c.stageCode === 'OFFER');
-  const activeDragCard = store.candidates.find((c) => c.id === activeDragCardId) ?? null;
 
   return (
     <div className="flex h-screen w-screen overflow-hidden bg-slate-50 text-slate-900">
@@ -1292,157 +1160,34 @@ export function App() {
               )}
 
               {/* =================================================================
-                  PORTAL 2: HIRING MANAGER OFFER APPROVAL QUEUE (hm-offers)
+                  PORTAL 2: HIRING MANAGER DEDICATED WORKSPACE
                  ================================================================= */}
-              {currentUser.role === 'HIRING_MANAGER' && activeSection === 'hm-offers' && (
-                <div className="space-y-4">
-                  <div className="rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-950 via-teal-900 to-slate-900 p-6 text-white shadow-lg">
-                    <span className="rounded-md bg-emerald-500/20 px-2.5 py-1 font-mono text-[10px] font-bold text-emerald-300 uppercase">
-                      HIRING MANAGER EXCLUSIVE AUTHORITY (S3.19, S3.20, D11)
-                    </span>
-                    <h2 className="mt-2 text-xl font-extrabold">
-                      Hàng Đợi Phê Duyệt Đề Nghị Nhận Việc (Offer Approval Queue)
-                    </h2>
-                    <p className="mt-1 max-w-2xl text-xs text-emerald-100/90">
-                      Khi bạn phê duyệt Offer tại đây, trạng thái được lưu bền vững vào hệ thống để
-                      chuyên viên HR (`hr@ats.local`) có thể kéo ứng viên sang cột{' '}
-                      <code>HIRED</code>.
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-                    {pendingOffers.length === 0 ? (
-                      <div className="col-span-2 rounded-2xl border border-dashed border-slate-300 bg-white p-8 text-center text-xs text-slate-500">
-                        Hiện không có ứng viên nào đang ở vòng OFFER.
-                      </div>
-                    ) : (
-                      pendingOffers.map((cand) => {
-                        const candJob =
-                          store.jobs.find((j) => j.id === cand.jobId) ?? selectedJob;
-                        const m = computeCandidateMetrics(cand, candJob.criteria);
-                        return (
-                          <div
-                            key={cand.id}
-                            className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-xs"
-                          >
-                            <div>
-                              <div className="flex items-start justify-between">
-                                <div>
-                                  <span className="rounded bg-emerald-50 px-2 py-0.5 font-mono text-[10px] font-bold text-emerald-700">
-                                    {candJob.title}
-                                  </span>
-                                  <h3 className="mt-1 text-base font-bold text-slate-900">
-                                    {cand.fullName}
-                                  </h3>
-                                  <p className="text-xs text-slate-500">{cand.experience}</p>
-                                </div>
-                                <span className="rounded-xl bg-emerald-50 px-3 py-1 font-mono text-sm font-extrabold text-emerald-700 tabular-nums">
-                                  S = {m.overallScore?.toFixed(2)} / 5.00
-                                </span>
-                              </div>
-
-                              <div className="mt-4 rounded-xl bg-slate-50 p-3.5 text-xs">
-                                <p className="font-semibold text-slate-700">
-                                  Mức lương đề xuất:{' '}
-                                  <strong className="font-mono text-slate-900">
-                                    {cand.offerSalary}
-                                  </strong>
-                                </p>
-                                {cand.offerBenefits && (
-                                  <p className="mt-1 text-[11px] text-slate-600">
-                                    Phúc lợi: {cand.offerBenefits}
-                                  </p>
-                                )}
-                                {cand.calibrationNote && (
-                                  <p className="mt-1 text-[11px] text-slate-600">
-                                    Biên bản Calibration: "{cand.calibrationNote}"
-                                  </p>
-                                )}
-                              </div>
-                            </div>
-
-                            <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4">
-                              {cand.offerApprovedByHm ? (
-                                <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-700">
-                                  <CheckCircle2 className="h-4 w-4" />
-                                  Đã phê duyệt bởi {cand.offerApprovedByName || currentUser.fullName}
-                                </span>
-                              ) : (
-                                <span className="text-xs font-semibold text-amber-600">
-                                  ⏳ Chờ bạn phê duyệt để mở khóa chốt HIRED
-                                </span>
-                              )}
-
-                              <div className="flex items-center gap-2">
-                                <button
-                                  type="button"
-                                  onClick={() => setCandidate360Id(cand.id)}
-                                  className="cursor-pointer rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
-                                >
-                                  Hồ sơ 360°
-                                </button>
-                                <button
-                                  type="button"
-                                  onClick={() => {
-                                    const nextApproved = !cand.offerApprovedByHm;
-                                    const ts = nowFormatted();
-                                    setStore((prev) => ({
-                                      ...prev,
-                                      candidates: prev.candidates.map((c) =>
-                                        c.id === cand.id
-                                          ? {
-                                              ...c,
-                                              offerApprovedByHm: nextApproved,
-                                              offerApprovedByName: currentUser.fullName,
-                                              offerApprovedAt: ts,
-                                              logs: [
-                                                ...c.logs,
-                                                {
-                                                  id: Date.now(),
-                                                  fromStageCode: 'OFFER',
-                                                  toStageCode: 'OFFER',
-                                                  actorName: currentUser.fullName,
-                                                  actorRole: currentUser.role,
-                                                  note: nextApproved
-                                                    ? `Hiring Manager (${currentUser.fullName}) đã phê duyệt Offer (S3.20)`
-                                                    : 'Hiring Manager hủy phê duyệt Offer',
-                                                  createdAt: ts,
-                                                },
-                                              ],
-                                            }
-                                          : c,
-                                      ),
-                                    }));
-                                    appendAudit(
-                                      'OFFER_APPROVAL',
-                                      `Hiring Manager ${nextApproved ? 'phê duyệt' : 'hủy duyệt'} Offer cho ${cand.fullName}`,
-                                    );
-                                  }}
-                                  className={cn(
-                                    'cursor-pointer rounded-xl px-4 py-2 text-xs font-bold text-white shadow-md transition-all',
-                                    cand.offerApprovedByHm
-                                      ? 'bg-slate-600 hover:bg-slate-700'
-                                      : 'bg-emerald-600 shadow-emerald-600/25 hover:bg-emerald-700',
-                                  )}
-                                >
-                                  {cand.offerApprovedByHm
-                                    ? 'Hủy phê duyệt'
-                                    : '✓ Phê Duyệt Offer Ngay'}
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                </div>
+              {currentUser.role === 'HIRING_MANAGER' && (
+                <HiringManagerPortalView
+                  activeSection={activeSection}
+                  onSelectSection={setActiveSection}
+                  currentUser={currentUser}
+                  store={store}
+                  setStore={setStore}
+                  selectedJob={selectedJob}
+                  onSelectJobId={setSelectedJobId}
+                  onOpenCandidate360={(cid) => setCandidate360Id(cid)}
+                  onTriggerViolation={(v) => setViolation({ open: true, ...v })}
+                  appendAudit={appendAudit}
+                  selectedEvalCandidateId={selectedEvalCandidateId}
+                  onSelectEvalCandidateId={setSelectedEvalCandidateId}
+                  onUpdateSheetScore={handleUpdateSheetScore}
+                  onUpdateSheetCriterionComment={handleUpdateSheetCriterionComment}
+                  onUpdateSheetMeta={handleUpdateSheetMeta}
+                  onSubmitSheet={handleSubmitSheet}
+                />
               )}
 
               {/* =================================================================
                   REQUISITIONS & MULTI-JOB SETUP (hm-requisitions, hr-jobs)
                  ================================================================= */}
-              {(activeSection === 'hm-requisitions' || activeSection === 'hr-jobs') && (
+              {currentUser.role !== 'HIRING_MANAGER' && currentUser.role !== 'HR' &&
+                (activeSection === 'hm-requisitions' || activeSection === 'hr-jobs') && (
                 <JobSetupView
                   currentUser={currentUser}
                   requisitions={store.requisitions}
@@ -1715,137 +1460,303 @@ export function App() {
               )}
 
               {/* =================================================================
-                  PORTAL 3: HR KANBAN PIPELINE BOARD (hr-kanban)
+                  PORTAL 3: HR RECRUITMENT OPERATIONS HUB
                  ================================================================= */}
-              {currentUser.role === 'HR' && activeSection === 'hr-kanban' && (
-                <div className="space-y-4">
-                  {/* Search, Multi-Filter & S3.22 Race Condition Bar */}
-                  <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
-                    <div className="flex flex-wrap items-center gap-2">
-                      {/* Job Campaign Selector in Kanban Toolbar (ModernSelect UI/UX PRO MAX) */}
-                      <ModernSelect<number>
-                        value={selectedJob.id}
-                        onChange={(val) => setSelectedJobId(Number(val))}
-                        options={store.jobs.map((j) => ({
-                          value: j.id,
-                          label: `#${j.id} ${j.title}`,
-                          badge: `${j.filledCount}/${j.headcount}`,
-                          badgeColor: j.filledCount >= j.headcount ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700',
-                        }))}
-                        triggerClassName="rounded-2xl"
-                      />
-
-                      <div className="relative w-56">
-                        <Search className="absolute top-2.5 left-3 h-3.5 w-3.5 text-slate-400" />
-                        <input
-                          type="text"
-                          value={kanbanSearch}
-                          onChange={(e) => setKanbanSearch(e.target.value)}
-                          placeholder="Tìm tên, email, SĐT..."
-                          className="w-full rounded-xl border border-slate-200 bg-slate-50 py-1.5 pr-3 pl-8 text-xs focus:border-blue-600 focus:bg-white focus:outline-none"
-                        />
-                      </div>
-
-                      {(
-                        [
-                          { id: 'ALL', label: `Tất cả (${jobCandidates.length})` },
-                          { id: 'RETURNING', label: 'Ứng viên cũ (D09)' },
-                          { id: 'VARIANCE', label: 'Lệch Δ ≥ 2.0' },
-                          { id: 'KNOCKOUT', label: 'Điểm liệt' },
-                          { id: 'PENDING_OFFER', label: 'Chờ HM duyệt Offer' },
-                        ] as { id: KanbanFilterType; label: string }[]
-                      ).map((f) => (
-                        <button
-                          key={f.id}
-                          type="button"
-                          onClick={() => setKanbanFilter(f.id)}
-                          className={cn(
-                            'cursor-pointer rounded-xl px-3 py-1.5 text-xs font-semibold transition-all',
-                            kanbanFilter === f.id
-                              ? 'bg-blue-600 text-white shadow-xs'
-                              : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
-                          )}
-                        >
-                          {f.label}
-                        </button>
-                      ))}
-                    </div>
-
-                    <button
-                      type="button"
-                      onClick={() => {
+              {currentUser.role === 'HR' && (
+                <HrPortalView
+                  activeSection={activeSection}
+                  onSelectSection={setActiveSection}
+                  currentUser={currentUser}
+                  store={store}
+                  setStore={setStore}
+                  selectedJob={selectedJob}
+                  onSelectJobId={setSelectedJobId}
+                  onOpenCandidate360={(cid) => setCandidate360Id(cid)}
+                  onOpenEmailOutbox={() => setOutboxOpen(true)}
+                  onTriggerViolation={(v) => setViolation({ open: true, ...v })}
+                  appendAudit={appendAudit}
+                  onAttemptMoveStage={handleAttemptMoveStage}
+                  onOpenScheduleModal={(id) => setScheduleTargetId(id)}
+                  onOpenCalibrationModal={(id) => {
+                    setCalibrationTargetId(id);
+                    setCalibrationInput('');
+                  }}
+                  onCreateRequisition={(title, headcount, salaryRange) => {
+                    if (!title.trim()) return;
+                    if (!Number.isInteger(headcount) || headcount <= 0) {
+                      setViolation({
+                        open: true,
+                        code: 'REQ_INVALID_HEADCOUNT',
+                        message:
+                          'Số lượng cần tuyển (headcount) phải là số nguyên lớn hơn 0 (S2.3).',
+                        candidateName: title,
+                        fromStageName: 'Tạo Requisition',
+                        toStageName: `headcount = ${headcount}`,
+                      });
+                      return;
+                    }
+                    const newReq: RequisitionItem = {
+                      id: Date.now(),
+                      title: title.trim(),
+                      department: currentUser.department || 'Engineering',
+                      requestedBy: currentUser.fullName,
+                      headcount,
+                      filledCount: 0,
+                      salaryRange: salaryRange || 'Thỏa thuận',
+                      status: 'PENDING',
+                      createdAt: nowFormatted().slice(0, 10),
+                    };
+                    setStore((prev) => ({
+                      ...prev,
+                      requisitions: [newReq, ...prev.requisitions],
+                    }));
+                    appendAudit(
+                      'CREATE_REQUISITION',
+                      `${currentUser.fullName} tạo phiếu yêu cầu định biên: ${title} (${headcount} người)`,
+                    );
+                  }}
+                  onDecideRequisition={(reqId, decision) => {
+                    const req = store.requisitions.find((r) => r.id === reqId);
+                    if (!req) return;
+                    setStore((prev) => ({
+                      ...prev,
+                      requisitions: prev.requisitions.map((r) =>
+                        r.id === reqId ? { ...r, status: decision } : r,
+                      ),
+                    }));
+                    appendAudit(
+                      'DECIDE_REQUISITION',
+                      `HR ${currentUser.fullName} ${decision === 'APPROVED' ? 'phê duyệt' : 'từ chối'} phiếu định biên #${reqId} (${req.title})`,
+                    );
+                  }}
+                  onCreateJobFromReq={(req) => {
+                    if (req.status !== 'APPROVED') return;
+                    if (req.hasJobId || store.jobs.some((j) => j.requisitionId === req.id)) {
+                      setViolation({
+                        open: true,
+                        code: 'REQ_ALREADY_HAS_JOB',
+                        message:
+                          'Yêu cầu tuyển dụng này đã liên kết với một Job đang chạy (quan hệ 1–1 theo S2.5, D14). Không thể tạo thêm Job thứ hai!',
+                        candidateName: req.title,
+                        fromStageName: 'Requisition 1-1',
+                        toStageName: 'Duplicate Job Rejected',
+                      });
+                      return;
+                    }
+                    const newJobId = Date.now();
+                    const newJob: JobItem = {
+                      id: newJobId,
+                      requisitionId: req.id,
+                      title: req.title,
+                      department: req.department,
+                      description: `Chiến dịch tuyển dụng vị trí ${req.title} cho phòng ${req.department}.`,
+                      requirements: '• Đáp ứng tiêu chuẩn kỹ thuật chuyên môn và văn hóa đội ngũ.',
+                      salaryRange: req.salaryRange,
+                      status: 'DRAFT',
+                      headcount: req.headcount,
+                      filledCount: 0,
+                      passScoreThreshold: 3.5,
+                      stages: DEFAULT_STAGES_TEMPLATE.map((s) => ({ ...s })),
+                      criteria: [
+                        { id: 1, name: 'Kiến thức chuyên môn cốt lõi', weightPercent: 40, isKnockout: true },
+                        { id: 2, name: 'Kinh nghiệm thực chiến & Kiến trúc', weightPercent: 30, isKnockout: false },
+                        { id: 3, name: 'Tư duy giải quyết vấn đề & Phản biện', weightPercent: 20, isKnockout: false },
+                        { id: 4, name: 'Văn hóa & Kỹ năng giao tiếp', weightPercent: 10, isKnockout: false },
+                      ],
+                      createdAt: nowFormatted().slice(0, 10),
+                    };
+                    setStore((prev) => ({
+                      ...prev,
+                      jobs: [newJob, ...prev.jobs],
+                    }));
+                    setSelectedJobId(newJobId);
+                    appendAudit(
+                      'CREATE_JOB',
+                      `Khởi tạo chiến dịch Job #${newJobId} từ Phiếu định biên #${req.id} (${req.title})`,
+                    );
+                  }}
+                  onUpdateJobConfig={(jobId, patch) => {
+                    const target = store.jobs.find((j) => j.id === jobId);
+                    if (!target) return;
+                    const hasApplicants = store.candidates.some((c) => c.jobId === jobId);
+                    if (
+                      hasApplicants &&
+                      patch.passScoreThreshold !== undefined &&
+                      patch.passScoreThreshold !== target.passScoreThreshold
+                    ) {
+                      setViolation({
+                        open: true,
+                        code: 'JOB_CONFIG_LOCKED_APPLICANTS',
+                        message: `Không thể thay đổi ngưỡng điểm vì Job "${target.title}" đã có ${store.candidates.filter((c) => c.jobId === jobId).length} ứng viên nộp hồ sơ (S2.7, FR-202). Cấu hình đã bị khóa bảo vệ!`,
+                        candidateName: target.title,
+                        fromStageName: `${target.passScoreThreshold}`,
+                        toStageName: `${patch.passScoreThreshold}`,
+                      });
+                      return;
+                    }
+                    if (patch.headcount !== undefined && patch.headcount < target.filledCount) {
+                      setViolation({
+                        open: true,
+                        code: 'JOB_HEADCOUNT_BELOW_FILLED',
+                        message: `Không thể giảm chỉ tiêu tuyển dụng (${patch.headcount}) xuống thấp hơn số lượng đã tuyển (${target.filledCount})!`,
+                        candidateName: target.title,
+                        fromStageName: `${target.filledCount} đã tuyển`,
+                        toStageName: `Chỉ tiêu ${patch.headcount}`,
+                      });
+                      return;
+                    }
+                    if (patch.status === 'PUBLISHED') {
+                      const sum = target.criteria.reduce((a, b) => a + b.weightPercent, 0);
+                      if (target.criteria.length === 0 || sum !== 100) {
                         setViolation({
                           open: true,
-                          code: 'GUARD_HEADCOUNT_FULL',
-                          message:
-                            'Mô phỏng S3.22 (2 HR đồng thời chốt 2 ứng viên vào 1 chỗ trống cuối cùng): Giao dịch #1 thành công (filled_count = headcount), Giao dịch #2 bị chặn nguyên tử bởi UPDATE ... WHERE filled_count < headcount!',
-                          candidateName: 'Kiểm thử Đồng thời (S3.22 Concurrency Guard)',
-                          fromStageName: 'OFFER',
-                          toStageName: 'HIRED',
+                          code: 'JOB_CRITERIA_WEIGHT_INVALID',
+                          message: `Chưa thể xuất bản Job vì tổng trọng số tiêu chí chưa bằng 100% (Hiện tại: ${sum}% — S2.8). Vui lòng cấu hình lại Barem!`,
+                          candidateName: target.title,
+                          fromStageName: `${sum}%`,
+                          toStageName: '100%',
                         });
-                      }}
-                      className="cursor-pointer rounded-xl border border-indigo-200 bg-indigo-50/70 px-3.5 py-1.5 text-xs font-bold text-indigo-700 hover:bg-indigo-100"
-                    >
-                      ⚡ Mô phỏng 2 HR Chốt Tuyển Đồng Thời (S3.22)
-                    </button>
-                  </div>
-
-                  {/* Kanban Columns */}
-                  <DndContext
-                    sensors={sensors}
-                    onDragStart={handleDragStart}
-                    onDragEnd={handleDragEnd}
-                  >
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-4 xl:grid-cols-7">
-                      {selectedJob.stages
-                        .filter((s) => s.enabled)
-                        .map((stage) => {
-                          const stageCards = filteredKanbanCandidates.filter(
-                            (c) => c.stageCode === stage.code,
-                          );
-                          return (
-                            <DroppableKanbanColumn
-                              key={stage.code}
-                              stage={stage}
-                              count={stageCards.length}
-                            >
-                              {stageCards.length === 0 ? (
-                                <div className="flex h-36 items-center justify-center rounded-xl border border-dashed border-slate-300/80 p-4 text-center text-[11px] text-slate-400">
-                                  Kéo thẻ thả vào đây
-                                </div>
-                              ) : (
-                                stageCards.map((card) => (
-                                  <DraggableKanbanCard
-                                    key={card.id}
-                                    card={card}
-                                    stage={stage}
-                                    enabledStages={selectedJob.stages.filter((s) => s.enabled)}
-                                    criteria={selectedJob.criteria}
-                                    passThreshold={selectedJob.passScoreThreshold}
-                                    onAttemptMove={handleAttemptMoveStage}
-                                    onOpen360={setCandidate360Id}
-                                  />
-                                ))
-                              )}
-                            </DroppableKanbanColumn>
-                          );
-                        })}
-                    </div>
-
-                    <DragOverlay>
-                      {activeDragCard && (
-                        <div className="w-60 rotate-2 rounded-2xl border-2 border-blue-600 bg-white p-3.5 shadow-2xl">
-                          <p className="text-xs font-extrabold text-slate-900">
-                            {activeDragCard.fullName}
-                          </p>
-                          <p className="mt-0.5 text-[11px] text-slate-500">
-                            Đang kéo từ vòng {activeDragCard.stageCode}...
-                          </p>
-                        </div>
-                      )}
-                    </DragOverlay>
-                  </DndContext>
-                </div>
+                        return;
+                      }
+                      const req = store.requisitions.find((r) => r.id === target.requisitionId);
+                      if (req && req.status !== 'APPROVED') {
+                        setViolation({
+                          open: true,
+                          code: 'JOB_NOT_PUBLISHABLE',
+                          message: `Không thể xuất bản Job vì yêu cầu định biên liên kết (#${req.id}) chưa ở trạng thái ĐÃ DUYỆT (APPROVED — S2.11).`,
+                          candidateName: target.title,
+                          fromStageName: req.status,
+                          toStageName: 'APPROVED',
+                        });
+                        return;
+                      }
+                    }
+                    setStore((prev) => ({
+                      ...prev,
+                      jobs: prev.jobs.map((j) => (j.id === jobId ? { ...j, ...patch } : j)),
+                    }));
+                    appendAudit('UPDATE_JOB_CONFIG', `Cập nhật cấu hình Job #${jobId}`);
+                  }}
+                  onSaveStages={(jobId, stages) => {
+                    const target = store.jobs.find((j) => j.id === jobId);
+                    const hasApplicants = store.candidates.some((c) => c.jobId === jobId);
+                    if (hasApplicants) {
+                      setViolation({
+                        open: true,
+                        code: 'JOB_CONFIG_LOCKED_APPLICANTS',
+                        message: `Không thể thay đổi cấu hình vòng tuyển dụng vì Job "${target?.title ?? jobId}" đã có ${store.candidates.filter((c) => c.jobId === jobId).length} ứng viên nộp hồ sơ (S2.7). Vui lòng giữ nguyên quy trình!`,
+                        candidateName: target?.title ?? `Job #${jobId}`,
+                        fromStageName: 'Chỉnh sửa Pipeline',
+                        toStageName: 'Bị khóa bảo vệ',
+                      });
+                      return;
+                    }
+                    const mandatoryCodes = ['APPLIED', 'INTERVIEW', 'OFFER', 'HIRED', 'REJECTED'];
+                    const mandatoryDisabled = stages.find(
+                      (s) => mandatoryCodes.includes(s.code) && !s.enabled,
+                    );
+                    if (mandatoryDisabled) {
+                      setViolation({
+                        open: true,
+                        code: 'STAGE_REQUIRED',
+                        message: `Vòng "${mandatoryDisabled.name}" (${mandatoryDisabled.code}) là vòng bắt buộc, không được phép tắt (S2.6, D07).`,
+                        candidateName: target?.title ?? selectedJob.title,
+                        fromStageName: mandatoryDisabled.code,
+                        toStageName: 'DISABLED',
+                      });
+                      return;
+                    }
+                    setStore((prev) => ({
+                      ...prev,
+                      jobs: prev.jobs.map((j) => (j.id === jobId ? { ...j, stages } : j)),
+                    }));
+                    appendAudit('UPDATE_STAGES', `Cập nhật các vòng pipeline của Job #${jobId}`);
+                  }}
+                  onSaveCriteria={(jobId, criteriaList) => {
+                    const target = store.jobs.find((j) => j.id === jobId);
+                    const hasApplicants = store.candidates.some((c) => c.jobId === jobId);
+                    if (hasApplicants) {
+                      setViolation({
+                        open: true,
+                        code: 'JOB_CONFIG_LOCKED_APPLICANTS',
+                        message: `Không thể thay đổi Barem tiêu chí vì Job "${target?.title ?? jobId}" đã có ${store.candidates.filter((c) => c.jobId === jobId).length} ứng viên nộp hồ sơ (S2.7). Toàn bộ tiêu chí đã bị khóa bảo vệ!`,
+                        candidateName: target?.title ?? `Job #${jobId}`,
+                        fromStageName: 'Lưu Barem tiêu chí',
+                        toStageName: 'Bị khóa bảo vệ',
+                      });
+                      return;
+                    }
+                    if (!Array.isArray(criteriaList) || criteriaList.length === 0) {
+                      setViolation({
+                        open: true,
+                        code: 'CRITERIA_INVALID',
+                        message: 'Cần ít nhất 1 tiêu chí chấm điểm (S2.8).',
+                        candidateName: target?.title ?? `Job #${jobId}`,
+                      });
+                      return;
+                    }
+                    const names = criteriaList.map((c) => c.name.trim().toLowerCase());
+                    if (names.some((n) => !n)) {
+                      setViolation({
+                        open: true,
+                        code: 'CRITERIA_INVALID',
+                        message: 'Tên tiêu chí không được để trống (S2.10).',
+                        candidateName: target?.title ?? `Job #${jobId}`,
+                      });
+                      return;
+                    }
+                    if (new Set(names).size !== names.length) {
+                      setViolation({
+                        open: true,
+                        code: 'CRITERIA_INVALID',
+                        message: 'Tên các tiêu chí chấm điểm trong cùng một Job không được trùng nhau (S2.10).',
+                        candidateName: target?.title ?? selectedJob.title,
+                      });
+                      return;
+                    }
+                    const outOfRange = criteriaList.find(
+                      (c) =>
+                        !Number.isInteger(c.weightPercent) ||
+                        c.weightPercent < 1 ||
+                        c.weightPercent > 100,
+                    );
+                    if (outOfRange) {
+                      setViolation({
+                        open: true,
+                        code: 'CRITERIA_INVALID',
+                        message: `Trọng số của tiêu chí "${outOfRange.name}" phải là số nguyên từ 1% đến 100% (S2.10).`,
+                        candidateName: target?.title ?? selectedJob.title,
+                      });
+                      return;
+                    }
+                    const sum = criteriaList.reduce((a, b) => a + b.weightPercent, 0);
+                    if (sum !== 100) {
+                      setViolation({
+                        open: true,
+                        code: 'CRITERIA_WEIGHT_SUM',
+                        message: `Tổng trọng số các tiêu chí phải bằng đúng 100% (Hiện tại đang là ${sum}% — S2.8). Dữ liệu tiêu chí cũ được giữ nguyên!`,
+                        candidateName: target?.title ?? selectedJob.title,
+                        fromStageName: `${sum}%`,
+                        toStageName: '100%',
+                      });
+                      return;
+                    }
+                    setStore((prev) => ({
+                      ...prev,
+                      jobs: prev.jobs.map((j) => (j.id === jobId ? { ...j, criteria: criteriaList } : j)),
+                    }));
+                    appendAudit(
+                      'UPDATE_CRITERIA',
+                      `Lưu bộ tiêu chí chấm điểm cho Job #${jobId} (Tổng = 100%)`,
+                    );
+                  }}
+                  selectedEvalCandidateId={selectedEvalCandidateId}
+                  onSelectEvalCandidateId={setSelectedEvalCandidateId}
+                  onUpdateSheetScore={handleUpdateSheetScore}
+                  onUpdateSheetCriterionComment={handleUpdateSheetCriterionComment}
+                  onUpdateSheetMeta={handleUpdateSheetMeta}
+                  onSubmitSheet={handleSubmitSheet}
+                />
               )}
 
               {/* =================================================================
@@ -1966,9 +1877,11 @@ export function App() {
               {/* =================================================================
                   SPLIT-SCREEN EVALUATION STUDIO (int-studio, hm-studio, hr-studio)
                  ================================================================= */}
-              {(activeSection === 'int-studio' ||
-                activeSection === 'hm-studio' ||
-                activeSection === 'hr-studio') && (
+              {currentUser.role !== 'HIRING_MANAGER' &&
+                currentUser.role !== 'HR' &&
+                (activeSection === 'int-studio' ||
+                  activeSection === 'hm-studio' ||
+                  activeSection === 'hr-studio') && (
                 <EvaluationStudioView
                   currentUser={currentUser}
                   jobTitle={selectedJob.title}
@@ -2088,7 +2001,9 @@ export function App() {
               {/* =================================================================
                   CALIBRATION MATRIX & CSV EXPORT (hr-calibration, hm-calibration)
                  ================================================================= */}
-              {(activeSection === 'hr-calibration' || activeSection === 'hm-calibration') && (
+              {currentUser.role !== 'HIRING_MANAGER' &&
+                currentUser.role !== 'HR' &&
+                (activeSection === 'hr-calibration' || activeSection === 'hm-calibration') && (
                 <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
                   <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
                     <div>
@@ -2228,7 +2143,7 @@ export function App() {
               {/* =================================================================
                   ANALYTICS DASHBOARD (hr-analytics)
                  ================================================================= */}
-              {activeSection === 'hr-analytics' && (
+              {currentUser.role !== 'HR' && activeSection === 'hr-analytics' && (
                 <div className="space-y-5">
                   <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
                     {[
