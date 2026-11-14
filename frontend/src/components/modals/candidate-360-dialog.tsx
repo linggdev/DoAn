@@ -84,28 +84,28 @@ export const Candidate360Dialog: React.FC<Candidate360DialogProps> = ({
                   className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
                 >
                   {/* Header */}
-                  <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200 bg-slate-950 px-6 py-4 text-white">
+                  <div className="flex flex-wrap items-start justify-between gap-4 border-b border-slate-200/80 bg-gradient-to-r from-slate-50 via-blue-50/30 to-white px-6 py-4">
                     <div>
                       <div className="flex flex-wrap items-center gap-2">
-                        <span className="rounded-md bg-blue-600 px-2.5 py-0.5 font-mono text-[11px] font-bold">
+                        <span className="rounded-md bg-blue-600 px-2.5 py-0.5 font-mono text-[11px] font-bold text-white shadow-2xs">
                           HỒ SƠ ỨNG VIÊN 360°
                         </span>
-                        <span className="rounded-md bg-slate-800 px-2.5 py-0.5 font-mono text-[11px] font-bold text-slate-300">
+                        <span className="rounded-md border border-slate-200 bg-white px-2.5 py-0.5 font-mono text-[11px] font-bold text-slate-700 shadow-2xs">
                           Vòng: {candidate.stageCode}
                         </span>
                         {candidate.isReturningCandidate && (
-                          <span className="rounded-md bg-amber-500/20 px-2.5 py-0.5 text-[11px] font-bold text-amber-300 ring-1 ring-amber-400/40">
+                          <span className="rounded-md bg-amber-100 px-2.5 py-0.5 text-[11px] font-bold text-amber-800 ring-1 ring-amber-300">
                             ⚠️ Ứng viên cũ (Trùng lịch sử D09)
                           </span>
                         )}
                       </div>
-                      <Dialog.Title className="mt-1.5 text-lg font-extrabold text-white">
+                      <Dialog.Title className="mt-1.5 text-lg font-extrabold text-slate-900">
                         {candidate.fullName} —{' '}
-                        <span className="text-blue-300">{jobTitle}</span>
+                        <span className="text-blue-600">{jobTitle}</span>
                       </Dialog.Title>
-                      <Dialog.Description className="mt-0.5 font-mono text-xs text-slate-400">
+                      <Dialog.Description className="mt-0.5 font-mono text-xs text-slate-500">
                         {candidate.email} · {candidate.phone} · Mã tra cứu:{' '}
-                        {candidate.trackingToken}
+                        <code className="text-slate-800 font-bold">{candidate.trackingToken}</code>
                       </Dialog.Description>
                     </div>
 
@@ -113,7 +113,7 @@ export const Candidate360Dialog: React.FC<Candidate360DialogProps> = ({
                       <button
                         type="button"
                         onClick={onClose}
-                        className="cursor-pointer rounded-xl border border-slate-800 bg-slate-900 p-2 text-slate-400 hover:bg-slate-800 hover:text-white"
+                        className="cursor-pointer rounded-xl border border-slate-200 bg-white p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 shadow-2xs transition-colors"
                       >
                         <X className="h-4 w-4" />
                       </button>
@@ -227,8 +227,8 @@ export const Candidate360Dialog: React.FC<Candidate360DialogProps> = ({
                         </div>
 
                         {/* CV PDF Snapshot Viewer */}
-                        <div className="rounded-xl border border-slate-200 bg-slate-900 p-4 lg:col-span-7">
-                          <div className="mb-3 flex items-center justify-between text-xs text-white">
+                        <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 lg:col-span-7">
+                          <div className="mb-3 flex items-center justify-between text-xs text-slate-800">
                             <span className="font-mono font-bold">
                               📄 {candidate.resumeFileName}
                             </span>
@@ -508,7 +508,7 @@ export const Candidate360Dialog: React.FC<Candidate360DialogProps> = ({
                           >
                             <div className="space-y-0.5">
                               <div className="flex items-center gap-2">
-                                <span className="rounded bg-slate-900 px-2 py-0.5 font-mono text-[10px] font-bold text-white">
+                                <span className="rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-0.5 font-mono text-[10px] font-extrabold text-blue-700 shadow-2xs">
                                   {log.fromStageCode ? `${log.fromStageCode} → ` : ''}
                                   {log.toStageCode}
                                 </span>
@@ -573,12 +573,12 @@ export const EmailOutboxDialog: React.FC<EmailOutboxDialogProps> = ({
                   exit={{ opacity: 0, scale: 0.95, y: 8 }}
                   className="flex max-h-[85vh] w-full max-w-3xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
                 >
-                  <div className="flex items-center justify-between border-b border-slate-200 bg-slate-950 px-6 py-4 text-white">
+                  <div className="flex items-center justify-between border-b border-slate-200/80 bg-gradient-to-r from-slate-50 via-blue-50/30 to-white px-6 py-4">
                     <div>
-                      <Dialog.Title className="text-base font-extrabold">
+                      <Dialog.Title className="text-base font-extrabold text-slate-900">
                         📬 Hộp Thư Tự Động Hệ Thống (Transactional Email Outbox — D16)
                       </Dialog.Title>
-                      <Dialog.Description className="text-xs text-slate-400">
+                      <Dialog.Description className="text-xs text-slate-500">
                         Toàn bộ email mời phỏng vấn (.ics), xác nhận ứng tuyển, Offer & thông báo tự
                         động đóng Job được gửi sau khi Transaction commit thành công.
                       </Dialog.Description>
@@ -587,7 +587,7 @@ export const EmailOutboxDialog: React.FC<EmailOutboxDialogProps> = ({
                       <button
                         type="button"
                         onClick={onClose}
-                        className="cursor-pointer rounded-xl bg-slate-800 p-2 text-slate-300 hover:text-white"
+                        className="cursor-pointer rounded-xl border border-slate-200 bg-white p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 shadow-2xs transition-colors"
                       >
                         <X className="h-4 w-4" />
                       </button>

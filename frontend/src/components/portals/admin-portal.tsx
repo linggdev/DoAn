@@ -1313,7 +1313,7 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                               setGovTab('jobs');
                               onSelectSection('admin-governance');
                             }}
-                            className="cursor-pointer rounded-xl bg-slate-900 px-3 py-1 text-[11px] font-bold text-white shadow-2xs hover:bg-amber-600 transition-all active:scale-95 shrink-0"
+                            className="cursor-pointer rounded-xl border border-amber-300 bg-amber-50 px-3 py-1 text-[11px] font-bold text-amber-900 shadow-2xs hover:bg-amber-100 hover:border-amber-400 transition-all active:scale-95 shrink-0"
                           >
                             Cấu hình
                           </button>
@@ -1690,7 +1690,7 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                   <button
                     type="button"
                     onClick={() => setUserPage(1)}
-                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-2xl bg-slate-900 px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-slate-800 transition-all active:scale-95"
+                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-2xl border border-amber-300/80 bg-amber-500 hover:bg-amber-400 px-3.5 py-1.5 text-xs font-extrabold text-slate-950 shadow-xs hover:shadow transition-all active:scale-95"
                   >
                     <Search className="h-3.5 w-3.5" />
                     <span>Tìm kiếm</span>
@@ -2226,7 +2226,7 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                   <button
                     type="button"
                     onClick={() => setDeptPage(1)}
-                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-2xl bg-slate-900 px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-slate-800 transition-all active:scale-95"
+                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-2xl border border-amber-300/80 bg-amber-500 hover:bg-amber-400 px-3.5 py-1.5 text-xs font-extrabold text-slate-950 shadow-xs hover:shadow transition-all active:scale-95"
                   >
                     <Search className="h-3.5 w-3.5" />
                     <span>Tìm kiếm</span>
@@ -2688,8 +2688,8 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                 className={cn(
                   'cursor-pointer rounded-xl px-4 py-2 text-xs font-bold transition-all',
                   govTab === 'jobs'
-                    ? 'bg-slate-900 text-white shadow-xs'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+                    ? 'bg-amber-500 text-slate-950 font-extrabold shadow-sm shadow-amber-500/20'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200',
                 )}
               >
                 1. Quản trị Requisitions, Jobs & Barem Trọng số ({store.jobs.length} Jobs)
@@ -2700,8 +2700,8 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                 className={cn(
                   'cursor-pointer rounded-xl px-4 py-2 text-xs font-bold transition-all',
                   govTab === 'candidates'
-                    ? 'bg-slate-900 text-white shadow-xs'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200',
+                    ? 'bg-amber-500 text-slate-950 font-extrabold shadow-sm shadow-amber-500/20'
+                    : 'bg-slate-100 text-slate-700 hover:bg-slate-200',
                 )}
               >
                 2. Giám sát Toàn bộ Hồ sơ Ứng viên ({store.candidates.length} Ứng viên)
@@ -3034,7 +3034,7 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                     <button
                       type="button"
                       onClick={() => setGovCandPage(1)}
-                      className="inline-flex cursor-pointer items-center gap-1.5 rounded-2xl bg-slate-900 px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-slate-800 transition-all active:scale-95"
+                      className="inline-flex cursor-pointer items-center gap-1.5 rounded-2xl border border-amber-300/80 bg-amber-500 hover:bg-amber-400 px-3.5 py-1.5 text-xs font-extrabold text-slate-950 shadow-xs hover:shadow transition-all active:scale-95"
                     >
                       <Search className="h-3.5 w-3.5" />
                       <span>Tìm kiếm</span>
@@ -3182,7 +3182,7 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                             <p className="text-[11px] text-slate-400">{job.department}</p>
                           </td>
                           <td className="px-3.5 py-3">
-                            <span className="rounded-md bg-slate-900 px-2 py-0.5 font-mono text-[10px] font-bold text-white">
+                            <span className="rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-0.5 font-mono text-[10px] font-extrabold text-blue-700 shadow-2xs">
                               {cand.stageCode}
                             </span>
                           </td>
@@ -3461,7 +3461,7 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                   <button
                     type="button"
                     onClick={() => setAuditPage(1)}
-                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-2xl bg-slate-900 px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-slate-800 transition-all active:scale-95"
+                    className="inline-flex cursor-pointer items-center gap-1.5 rounded-2xl border border-amber-300/80 bg-amber-500 hover:bg-amber-400 px-3.5 py-1.5 text-xs font-extrabold text-slate-950 shadow-xs hover:shadow transition-all active:scale-95"
                   >
                     <Search className="h-3.5 w-3.5" />
                     <span>Tìm kiếm</span>
@@ -3504,7 +3504,7 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                 <button
                   type="button"
                   onClick={handleExportAuditCsv}
-                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-slate-900 px-3.5 py-1.5 text-xs font-bold text-white shadow-2xs hover:bg-slate-800 transition-all active:scale-95"
+                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3.5 py-1.5 text-xs font-bold text-emerald-800 shadow-2xs hover:bg-emerald-100 transition-all active:scale-95"
                 >
                   <Download className="h-3.5 w-3.5" />
                   Xuất Audit (.CSV)
@@ -3600,7 +3600,7 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                           </td>
                           <td className="px-4 py-3 whitespace-nowrap">
                             <div className="flex items-center gap-1.5">
-                              <span className="rounded-md bg-slate-900 px-2 py-0.5 font-mono text-[10px] font-bold text-white shadow-2xs">
+                              <span className="rounded-lg border border-slate-200 bg-slate-100 px-2.5 py-0.5 font-mono text-[10px] font-extrabold text-slate-800 shadow-2xs">
                                 {log.action}
                               </span>
                               {isIam && (
@@ -3689,16 +3689,16 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
           <div className="relative w-full max-w-2xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl">
             {/* Modal Header */}
-            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-900 px-6 py-4 text-white">
+            <div className="flex items-center justify-between border-b border-emerald-100 bg-gradient-to-r from-emerald-50/90 via-teal-50/50 to-white px-6 py-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-400">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 shadow-2xs">
                   <Award className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-white">
+                  <h3 className="text-base font-bold text-slate-900">
                     Chứng Nhận Kiểm Định Toàn Vẹn Hệ Thống (System Integrity Audit)
                   </h3>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-500">
                     Báo cáo kiểm thử tự động 8 chốt chặn nghiệp vụ & CSDL chuẩn đồ án tốt nghiệp
                   </p>
                 </div>
@@ -3707,7 +3707,7 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
               <button
                 type="button"
                 onClick={() => setHealthCheckOpen(false)}
-                className="cursor-pointer rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white"
+                className="cursor-pointer rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -3827,7 +3827,7 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setHealthCheckOpen(false)}
-                  className="cursor-pointer rounded-xl bg-slate-900 px-4 py-1.5 font-bold text-white hover:bg-amber-600"
+                  className="cursor-pointer rounded-xl bg-emerald-600 px-4 py-1.5 font-bold text-white shadow-xs hover:bg-emerald-500 transition-all active:scale-95"
                 >
                   Hoàn Tất
                 </button>
@@ -3844,16 +3844,16 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
           <div className="relative flex max-h-[85vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
             {/* Header */}
-            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-900 px-6 py-4 text-white">
+            <div className="flex items-center justify-between border-b border-blue-100 bg-gradient-to-r from-blue-50/90 via-indigo-50/50 to-white px-6 py-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-500/20 text-blue-400">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-600 shadow-2xs">
                   <Database className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-white">
+                  <h3 className="text-base font-bold text-slate-900">
                     Kiến Trúc 13 Bảng Cơ Sở Dữ Liệu SQL Server (ATS_Enterprise_DB)
                   </h3>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-500">
                     Kịch bản T-SQL 3NF, ràng buộc toàn vẹn khóa ngoại (FK) & dữ liệu mẫu đồng bộ SSMS
                   </p>
                 </div>
@@ -3861,7 +3861,7 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
               <button
                 type="button"
                 onClick={() => setDbSchemaModalOpen(false)}
-                className="cursor-pointer rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white"
+                className="cursor-pointer rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -3994,7 +3994,7 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
               <button
                 type="button"
                 onClick={() => setDbSchemaModalOpen(false)}
-                className="cursor-pointer rounded-xl bg-slate-900 px-4 py-1.5 font-bold text-white hover:bg-slate-800"
+                className="cursor-pointer rounded-xl border border-slate-200 bg-white px-4 py-1.5 font-bold text-slate-700 shadow-2xs hover:bg-slate-50 hover:border-slate-300 transition-all active:scale-95"
               >
                 Đóng
               </button>
@@ -4009,22 +4009,22 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
       {editingUser && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
           <div className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-900 px-6 py-4 text-white">
+            <div className="flex items-center justify-between border-b border-amber-100 bg-gradient-to-r from-amber-50/90 via-orange-50/50 to-white px-6 py-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/20 text-amber-400">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600 shadow-2xs">
                   <KeyRound className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-white">
+                  <h3 className="text-base font-bold text-slate-900">
                     Cập Nhật Hồ Sơ & Phân Quyền Tài Khoản #{editingUser.id}
                   </h3>
-                  <p className="text-xs text-slate-400">{editingUser.email}</p>
+                  <p className="text-xs text-slate-500 font-mono">{editingUser.email}</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setEditingUser(null)}
-                className="cursor-pointer rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white"
+                className="cursor-pointer rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -4350,16 +4350,16 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
       {isCreateUserOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
           <div className="relative w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-900 px-6 py-4 text-white">
+            <div className="flex items-center justify-between border-b border-amber-100 bg-gradient-to-r from-amber-50/90 via-orange-50/50 to-white px-6 py-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/20 text-amber-400">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600 shadow-2xs">
                   <UserPlus className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-white">
+                  <h3 className="text-base font-bold text-slate-900">
                     Cấp Mới Tài Khoản & Gán Quyền Truy Cập (IAM Provisioning)
                   </h3>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-500">
                     Khởi tạo tài khoản nhân sự mới theo chuẩn Strict 5-Role RBAC (S1.2, S1.3)
                   </p>
                 </div>
@@ -4367,7 +4367,7 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
               <button
                 type="button"
                 onClick={() => setIsCreateUserOpen(false)}
-                className="cursor-pointer rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+                className="cursor-pointer rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -4697,16 +4697,16 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
       {isCreateDeptOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
           <div className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-900 px-6 py-4 text-white">
+            <div className="flex items-center justify-between border-b border-amber-100 bg-gradient-to-r from-amber-50/90 via-orange-50/50 to-white px-6 py-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/20 text-amber-400">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600 shadow-2xs">
                   <Building2 className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-white">
+                  <h3 className="text-base font-bold text-slate-900">
                     Thêm Phòng Ban Mới (Tổ chức doanh nghiệp)
                   </h3>
-                  <p className="text-xs text-slate-400">
+                  <p className="text-xs text-slate-500">
                     Khởi tạo phòng ban và chỉ định Trưởng bộ phận phụ trách
                   </p>
                 </div>
@@ -4714,7 +4714,7 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
               <button
                 type="button"
                 onClick={() => setIsCreateDeptOpen(false)}
-                className="cursor-pointer rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+                className="cursor-pointer rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -4832,22 +4832,22 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
       {editingDept && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
           <div className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-900 px-6 py-4 text-white">
+            <div className="flex items-center justify-between border-b border-amber-100 bg-gradient-to-r from-amber-50/90 via-orange-50/50 to-white px-6 py-4">
               <div className="flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/20 text-amber-400">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-100 text-amber-600 shadow-2xs">
                   <Building2 className="h-5 w-5" />
                 </div>
                 <div>
-                  <h3 className="text-base font-bold text-white">
+                  <h3 className="text-base font-bold text-slate-900">
                     Chỉnh Sửa Thông Tin Phòng Ban
                   </h3>
-                  <p className="text-xs text-slate-400">{editingDept.name}</p>
+                  <p className="text-xs text-slate-500">{editingDept.name}</p>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => setEditingDept(null)}
-                className="cursor-pointer rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+                className="cursor-pointer rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 transition-colors"
               >
                 <X className="h-4 w-4" />
               </button>

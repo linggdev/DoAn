@@ -233,7 +233,7 @@ const DraggableKanbanCard: React.FC<{
           <button
             type="button"
             onClick={() => onAttemptMove(card.id, nextStageObj.code)}
-            className="flex-1 cursor-pointer rounded-lg bg-slate-900 px-2 py-1.5 text-[11px] font-semibold text-white transition-colors hover:bg-blue-600"
+            className="flex-1 cursor-pointer rounded-lg border border-amber-300 bg-amber-50 px-2 py-1.5 text-[11px] font-bold text-amber-950 transition-colors hover:bg-amber-100 active:scale-95 shadow-2xs"
           >
             → {nextStageObj.code}
           </button>
@@ -1183,7 +1183,7 @@ export function App() {
 
                 <button
                   type="submit"
-                  className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-slate-900 py-3 text-xs font-bold text-white shadow-lg transition-all hover:bg-blue-600"
+                  className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-xl bg-amber-500 py-3 text-xs font-extrabold text-slate-950 shadow-md shadow-amber-500/20 transition-all hover:bg-amber-400 active:scale-95"
                 >
                   <UserPlus className="h-4 w-4" />
                   Đăng Ký & Vào Giao Diện {ROLE_META[regRole].roleBadge}

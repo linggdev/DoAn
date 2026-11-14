@@ -899,7 +899,7 @@ export const UserProfileMenu: React.FC<UserProfileMenuProps> = ({
                 <button
                   type="button"
                   onClick={() => setRbacModalOpen(false)}
-                  className="cursor-pointer rounded-xl bg-slate-900 px-4 py-2 text-xs font-bold text-white hover:bg-slate-800"
+                  className="cursor-pointer rounded-xl bg-amber-500 px-4 py-2 text-xs font-extrabold text-slate-950 shadow-sm shadow-amber-500/20 hover:bg-amber-400 transition-all active:scale-95"
                 >
                   Đã hiểu
                 </button>

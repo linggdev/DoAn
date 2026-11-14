@@ -149,8 +149,8 @@ export const EvaluationStudioView: React.FC<EvaluationStudioProps> = ({
                 className={cn(
                   'cursor-pointer rounded-xl px-3 py-1.5 text-xs font-semibold transition-all',
                   c.id === evalCandidate.id
-                    ? 'bg-slate-900 text-white shadow-xs'
-                    : 'border border-slate-200 bg-slate-50 text-slate-700 hover:bg-slate-100',
+                    ? 'bg-amber-500 text-slate-950 font-extrabold shadow-sm shadow-amber-500/20'
+                    : 'border border-slate-200 bg-white text-slate-700 hover:bg-slate-50',
                 )}
               >
                 {c.fullName}{' '}
@@ -212,8 +212,8 @@ export const EvaluationStudioView: React.FC<EvaluationStudioProps> = ({
           </div>
 
           {leftPaneTab === 'pdf' && (
-            <div className="flex-1 rounded-xl border border-slate-200 bg-slate-900 p-4">
-              <div className="mb-3 flex items-center justify-between text-xs text-white">
+            <div className="flex-1 rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <div className="mb-3 flex items-center justify-between text-xs text-slate-800">
                 <span className="font-mono font-bold">📄 {evalCandidate.resumeFileName}</span>
                 {evalCandidate.interviewScheduledAt && (
                   <button

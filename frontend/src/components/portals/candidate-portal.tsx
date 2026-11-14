@@ -303,7 +303,7 @@ export const CandidatePortalView: React.FC<CandidatePortalProps> = ({
                 value={searchKeyword}
                 onChange={(e) => setSearchKeyword(e.target.value)}
                 placeholder="Tìm theo vị trí hoặc phòng ban..."
-                className="w-full rounded-xl border border-slate-700 bg-slate-900/90 py-2 pr-3 pl-9 text-xs text-white placeholder:text-slate-400 focus:border-sky-400 focus:outline-none"
+                className="w-full rounded-xl border border-slate-200 bg-white py-2 pr-3 pl-9 text-xs text-slate-800 placeholder:text-slate-400 focus:border-amber-400 focus:outline-none shadow-2xs"
               />
             </div>
           </div>
@@ -491,7 +491,7 @@ export const CandidatePortalView: React.FC<CandidatePortalProps> = ({
                   className={cn(
                     'cursor-pointer rounded-lg px-2.5 py-1 font-mono font-semibold',
                     searchedToken === c.trackingToken
-                      ? 'bg-slate-900 text-white'
+                      ? 'bg-amber-500 text-slate-950 font-bold shadow-xs'
                       : 'bg-slate-100 text-slate-700 hover:bg-slate-200',
                   )}
                 >
