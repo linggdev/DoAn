@@ -318,6 +318,12 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
   const [healthCheckOpen, setHealthCheckOpen] = useState(false);
   const [dbSchemaModalOpen, setDbSchemaModalOpen] = useState(false);
   const [deleteConfirmUser, setDeleteConfirmUser] = useState<AccountUser | null>(null);
+  const [isCreateUserOpen, setIsCreateUserOpen] = useState(false);
+  const [resetConfirmUser, setResetConfirmUser] = useState<AccountUser | null>(null);
+  const [statusConfirmUser, setStatusConfirmUser] = useState<{
+    user: AccountUser;
+    nextStatus: 'ACTIVE' | 'INACTIVE';
+  } | null>(null);
 
   const [newUserName, setNewUserName] = useState('');
   const [newUserEmail, setNewUserEmail] = useState('');
@@ -337,11 +343,16 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
   // ---------------------------------------------------------------------------
   // STATE: DEPARTMENT MANAGEMENT (admin-departments)
   // ---------------------------------------------------------------------------
+  const [isCreateDeptOpen, setIsCreateDeptOpen] = useState(false);
   const [newDeptName, setNewDeptName] = useState('');
   const [newDeptManager, setNewDeptManager] = useState(
     store.users.find((u) => u.role === 'HIRING_MANAGER')?.fullName ?? 'Trần Minh Quân',
   );
-  const [editingDeptId, setEditingDeptId] = useState<number | null>(null);
+  const [editingDept, setEditingDept] = useState<{
+    id: number;
+    name: string;
+    managerName: string;
+  } | null>(null);
   const [editDeptName, setEditDeptName] = useState('');
   const [editDeptManager, setEditDeptManager] = useState('');
   const [deleteConfirmDept, setDeleteConfirmDept] = useState<{ id: number; name: string } | null>(null);
@@ -350,6 +361,13 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
   // ---------------------------------------------------------------------------
   // STATE: GOVERNANCE & CANDIDATE OVERSIGHT (admin-governance)
   // ---------------------------------------------------------------------------
+  const [offerApprovalCand, setOfferApprovalCand] = useState<{
+    id: number;
+    fullName: string;
+    jobTitle: string;
+    dept: string;
+    salary: string;
+  } | null>(null);
   const [govTab, setGovTab] = useState<'jobs' | 'candidates'>('jobs');
   const [govCandidateSearch, setGovCandidateSearch] = useState('');
   const [govStageFilter, setGovStageFilter] = useState<'ALL' | StageCode>('ALL');
@@ -790,26 +808,16 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                         </button>
                         <button
                           type="button"
-                          onClick={() => {
-                            setStore((prev) => ({
-                              ...prev,
-                              candidates: prev.candidates.map((c) =>
-                                c.id === cand.id
-                                  ? {
-                                      ...c,
-                                      offerApprovedByHm: true,
-                                      offerApprovedByName: `${currentUser.fullName} (ADMIN EXECUTIVE)`,
-                                    }
-                                  : c,
-                              ),
-                            }));
-                            appendAudit(
-                              'ADMIN_EXEC_APPROVE_OFFER',
-                              `Admin phê duyệt đặc cách Offer cho ứng viên ${cand.fullName} (${job.title})`,
-                            );
-                            notifyBanner(`Đã phê duyệt đặc cách Offer cho ${cand.fullName}!`);
-                          }}
-                          className="cursor-pointer rounded-lg bg-emerald-600 px-3 py-1 text-[11px] font-bold text-white shadow-xs hover:bg-emerald-700"
+                          onClick={() =>
+                            setOfferApprovalCand({
+                              id: cand.id,
+                              fullName: cand.fullName,
+                              jobTitle: job.title,
+                              dept: job.department,
+                              salary: cand.offerSalary || job.salaryRange || 'Theo thỏa thuận',
+                            })
+                          }
+                          className="cursor-pointer rounded-xl bg-emerald-600 px-3 py-1.5 text-[11px] font-bold text-white shadow-2xs hover:bg-emerald-700 transition-all active:scale-95"
                         >
                           Phê Duyệt Ngay
                         </button>
@@ -1197,7 +1205,7 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                 </p>
               </div>
 
-              {/* Search & Status Filter (UI/UX PRO MAX Rounded-2xl Styling) */}
+              {/* Search, Status Filter & Create User Action */}
               <div className="flex flex-wrap items-center gap-2.5">
                 <div className="relative">
                   <Search className="pointer-events-none absolute top-1/2 left-3 h-3.5 w-3.5 -translate-y-1/2 text-slate-400" />
@@ -1230,206 +1238,16 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                   ]}
                   triggerClassName="rounded-2xl"
                 />
+
+                <button
+                  type="button"
+                  onClick={() => setIsCreateUserOpen(true)}
+                  className="inline-flex cursor-pointer items-center gap-2 rounded-2xl bg-amber-500 px-4 py-2 text-xs font-extrabold text-slate-950 shadow-md shadow-amber-500/20 hover:bg-amber-400 hover:shadow-lg transition-all active:scale-95"
+                >
+                  <UserPlus className="h-4 w-4" />
+                  Cấp Mới Tài Khoản
+                </button>
               </div>
-            </div>
-
-            {/* Create User Form (UI/UX PRO MAX Symmetrical Layout & Dedicated Action Section) */}
-            <div className="mt-4 rounded-2xl border border-amber-200/90 bg-amber-50/40 p-5 text-xs shadow-2xs">
-              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-amber-200/60 pb-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="flex h-7 w-7 items-center justify-center rounded-xl bg-amber-500/20 text-amber-800">
-                    <UserPlus className="h-4 w-4 text-amber-700" />
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900">
-                      Cấp Mới Tài Khoản & Gán Quyền Truy Cập (IAM Provisioning)
-                    </h3>
-                    <p className="text-[11px] text-slate-500">
-                      Tạo tài khoản nhân sự mới và cấu hình phân quyền nghiêm ngặt theo chuẩn Strict 5-Role RBAC.
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-1.5 rounded-xl border border-amber-200 bg-white px-3 py-1 text-[11px] font-semibold text-amber-900 shadow-2xs">
-                  <KeyRound className="h-3 w-3 text-amber-600" />
-                  <span>Mật khẩu mặc định: <code className="font-mono font-bold text-slate-900">Password@123</code></span>
-                </div>
-              </div>
-
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const normEmail = normalizeEmailInput(newUserEmail);
-                  const normPhone = normalizePhoneInput(newUserPhone) || '0909888777';
-                  if (!newUserName.trim() || !normEmail || newUserPassword.length < 6) return;
-                  if (store.users.some((u) => normalizeEmailInput(u.email) === normEmail)) {
-                    onTriggerViolation({
-                      code: 'USER_EMAIL_TAKEN',
-                      message: `Email "${normEmail}" đã tồn tại trong hệ thống (HTTP 409 — S1.2).`,
-                      candidateName: newUserName.trim(),
-                      fromStageName: 'Admin IAM Create',
-                      toStageName: newUserRole,
-                    });
-                    return;
-                  }
-                  const created: AccountUser = {
-                    id: Date.now(),
-                    fullName: newUserName.trim(),
-                    email: normEmail,
-                    phone: normPhone,
-                    password: newUserPassword,
-                    role: newUserRole,
-                    department: newUserRole === 'CANDIDATE' ? 'Ứng viên bên ngoài' : newUserDept,
-                    status: 'ACTIVE',
-                  };
-                  setStore((prev) => ({
-                    ...prev,
-                    users: [...prev.users, created],
-                  }));
-                  appendAudit(
-                    'ADMIN_CREATE_USER',
-                    `Tạo tài khoản ${created.email} (Role: ${created.role}, Phòng ban: ${created.department})`,
-                  );
-                  notifyBanner(
-                    `Đã tạo tài khoản "${created.fullName}" (${created.email}) với Role ${created.role}!`,
-                  );
-                  setNewUserName('');
-                  setNewUserEmail('');
-                  setNewUserPhone('');
-                  setNewUserPassword('Password@123');
-                }}
-                className="mt-4 space-y-3.5"
-              >
-                {/* Row 1: Basic Identity Information */}
-                <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-700">
-                      Họ và tên nhân sự <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={newUserName}
-                      onChange={(e) => setNewUserName(e.target.value)}
-                      placeholder="Ví dụ: Nguyễn Văn A"
-                      className="mt-1 w-full rounded-2xl border border-slate-200/90 bg-white px-3.5 py-2 text-xs text-slate-900 shadow-2xs transition-all focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400/20"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-700">
-                      Email đăng nhập <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="email"
-                      required
-                      value={newUserEmail}
-                      onChange={(e) => setNewUserEmail(e.target.value)}
-                      placeholder="user@ats.local"
-                      className="mt-1 w-full rounded-2xl border border-slate-200/90 bg-white px-3.5 py-2 font-mono text-xs text-slate-900 shadow-2xs transition-all focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400/20"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-700">
-                      Số điện thoại liên hệ
-                    </label>
-                    <input
-                      type="text"
-                      value={newUserPhone}
-                      onChange={(e) => setNewUserPhone(e.target.value)}
-                      placeholder="0909888777"
-                      className="mt-1 w-full rounded-2xl border border-slate-200/90 bg-white px-3.5 py-2 font-mono text-xs text-slate-900 shadow-2xs transition-all focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400/20"
-                    />
-                  </div>
-                </div>
-
-                {/* Row 2: Role, Department & Password Setup */}
-                <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                      Vai trò được cấp (RBAC Role) <span className="text-red-500">*</span>
-                    </label>
-                    <ModernSelect<UserRole>
-                      value={newUserRole}
-                      onChange={(r) => setNewUserRole(r)}
-                      options={[
-                        { value: 'HR', label: 'HR (Chuyên viên Tuyển dụng)', badge: 'HR', badgeColor: 'bg-blue-100 text-blue-900' },
-                        { value: 'HIRING_MANAGER', label: 'HIRING_MANAGER (Trưởng bộ phận)', badge: 'HM', badgeColor: 'bg-emerald-100 text-emerald-900' },
-                        { value: 'INTERVIEWER', label: 'INTERVIEWER (Giám khảo)', badge: 'INT', badgeColor: 'bg-violet-100 text-violet-900' },
-                        { value: 'ADMIN', label: 'ADMIN (Quản trị viên)', badge: 'ADMIN', badgeColor: 'bg-amber-100 text-amber-900' },
-                        { value: 'CANDIDATE', label: 'CANDIDATE (Ứng viên)', badge: 'CAND', badgeColor: 'bg-sky-100 text-sky-900' },
-                      ]}
-                      className="w-full"
-                      triggerClassName="w-full rounded-2xl py-2"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                      Phòng ban trực thuộc
-                    </label>
-                    <ModernSelect<string>
-                      value={newUserDept}
-                      disabled={newUserRole === 'CANDIDATE'}
-                      onChange={(dept) => setNewUserDept(dept)}
-                      options={[
-                        { value: 'Executive & IT Governance', label: 'Executive & IT Governance' },
-                        { value: 'People & Talent', label: 'People & Talent' },
-                        ...store.departments.map((d) => ({
-                          value: d.name,
-                          label: d.name,
-                        })),
-                      ]}
-                      className="w-full"
-                      triggerClassName="w-full rounded-2xl py-2"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-[11px] font-bold text-slate-700">
-                      Mật khẩu khởi tạo (≥ 6 ký tự)
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={newUserPassword}
-                      onChange={(e) => setNewUserPassword(e.target.value)}
-                      placeholder="Mật khẩu (≥ 6 ký tự)"
-                      className="mt-1 w-full rounded-2xl border border-slate-200/90 bg-white px-3.5 py-2 font-mono text-xs text-slate-900 shadow-2xs transition-all focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400/20"
-                    />
-                  </div>
-                </div>
-
-                {/* Complete Form Action Bar (UI/UX PRO MAX - Perfectly Balanced & Non-Crammed) */}
-                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-amber-200/70 pt-3.5">
-                  <div className="flex items-center gap-2 text-[11px] text-amber-900/80">
-                    <ShieldCheck className="h-4 w-4 shrink-0 text-amber-600" />
-                    <span>Tài khoản mới sẽ kích hoạt tức thì theo quyền hạn RBAC và được kiểm soát phiên đăng nhập độc lập.</span>
-                  </div>
-
-                  <div className="flex items-center gap-2.5">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setNewUserName('');
-                        setNewUserEmail('');
-                        setNewUserPhone('');
-                        setNewUserPassword('Password@123');
-                        setNewUserRole('HR');
-                        setNewUserDept('People & Talent');
-                      }}
-                      className="inline-flex cursor-pointer items-center gap-1.5 rounded-2xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-2xs transition-all hover:bg-slate-50 hover:text-slate-900 active:scale-95"
-                    >
-                      <RotateCcw className="h-3.5 w-3.5 text-slate-400" />
-                      Làm mới
-                    </button>
-
-                    <button
-                      type="submit"
-                      className="inline-flex cursor-pointer items-center gap-2 rounded-2xl bg-amber-500 px-5 py-2 text-xs font-extrabold text-slate-950 shadow-md shadow-amber-500/20 transition-all hover:bg-amber-400 hover:shadow-lg active:scale-95"
-                    >
-                      <UserPlus className="h-4 w-4" />
-                      Cấp Mới & Kích Hoạt Tài Khoản
-                    </button>
-                  </div>
-                </div>
-              </form>
             </div>
 
             {/* Active User Filters Pill & Quick Reset */}
@@ -1712,23 +1530,7 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                           <div className="inline-flex items-center gap-1.5">
                             <button
                               type="button"
-                              onClick={() => {
-                                setStore((prev) => ({
-                                  ...prev,
-                                  users: prev.users.map((item) =>
-                                    item.id === u.id
-                                      ? { ...item, password: 'Password@123' }
-                                      : item,
-                                  ),
-                                }));
-                                appendAudit(
-                                  'ADMIN_RESET_PASSWORD',
-                                  `Admin đặt lại mật khẩu của ${u.email} về Password@123`,
-                                );
-                                notifyBanner(
-                                  `Đã đặt lại mật khẩu của ${u.email} về mặc định "Password@123"!`,
-                                );
-                              }}
+                              onClick={() => setResetConfirmUser(u)}
                               className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl border border-slate-200/90 bg-white px-2.5 py-1 text-[11px] font-semibold text-slate-700 shadow-2xs hover:border-slate-300 hover:bg-slate-50 transition-all active:scale-95"
                               title="Đặt lại mật khẩu về Password@123"
                             >
@@ -1761,21 +1563,7 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                                   onClick={() => {
                                     const nextStatus =
                                       u.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE';
-                                    setStore((prev) => ({
-                                      ...prev,
-                                      users: prev.users.map((item) =>
-                                        item.id === u.id ? { ...item, status: nextStatus } : item,
-                                      ),
-                                    }));
-                                    appendAudit(
-                                      'USER_STATUS',
-                                      `Cập nhật trạng thái ${u.email} → ${nextStatus}`,
-                                    );
-                                    notifyBanner(
-                                      nextStatus === 'INACTIVE'
-                                        ? `Đã khóa tài khoản ${u.email} (Chặn đăng nhập S1.3 USER_INACTIVE).`
-                                        : `Đã mở khóa tài khoản ${u.email}.`,
-                                    );
+                                    setStatusConfirmUser({ user: u, nextStatus });
                                   }}
                                   className={cn(
                                     'inline-flex cursor-pointer items-center gap-1 rounded-xl border px-2.5 py-1 text-[11px] font-semibold shadow-2xs transition-all active:scale-95',
@@ -1840,130 +1628,34 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
           TAB 3: ORG STRUCTURE & DEPARTMENT GOVERNANCE (admin-departments)
          ===================================================================== */}
       {activeSection === 'admin-departments' && (
-        <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
-          {/* Left: Create Department & Circular FK Architecture Info */}
-          <div className="space-y-4 lg:col-span-4">
-            <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+        <div className="space-y-5">
+          {/* Header Bar with Action Button */}
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white p-5 shadow-xs">
+            <div>
               <h2 className="text-base font-bold text-slate-900">
-                Khởi Tạo Phòng Ban & Gán Trưởng Bộ Phận
+                Cơ Cấu Phòng Ban & Trưởng Bộ Phận (Organizational Structure — S2.10)
               </h2>
-              <p className="mt-1 text-xs text-slate-500">
-                Cấu trúc khóa ngoại <code>manager_id</code> nullable giúp phá vòng lặp Circular
-                Foreign Key giữa bảng <code>departments</code> và <code>users</code>.
+              <p className="text-xs text-slate-500">
+                Quản lý các phòng ban chuyên môn, chỉ định Hiring Manager, theo dõi định biên nhân sự và ràng buộc khóa ngoại (Referential Integrity).
               </p>
-
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  const cleanName = newDeptName.trim();
-                  if (!cleanName) return;
-                  if (
-                    store.departments.some(
-                      (d) => d.name.toLowerCase() === cleanName.toLowerCase(),
-                    )
-                  ) {
-                    onTriggerViolation({
-                      code: 'DEPARTMENT_NAME_TAKEN',
-                      message: `Phòng ban "${cleanName}" đã tồn tại trong cơ cấu tổ chức.`,
-                      candidateName: cleanName,
-                      fromStageName: 'Org Structure',
-                      toStageName: 'Create Department',
-                    });
-                    return;
-                  }
-                  setStore((prev) => ({
-                    ...prev,
-                    departments: [
-                      ...prev.departments,
-                      {
-                        id: Date.now(),
-                        name: cleanName,
-                        managerName: newDeptManager,
-                        memberCount: 1,
-                        openRequisitions: 0,
-                      },
-                    ],
-                  }));
-                  appendAudit(
-                    'CREATE_DEPARTMENT',
-                    `Tạo phòng ban "${cleanName}" (Hiring Manager: ${newDeptManager})`,
-                  );
-                  notifyBanner(`Đã tạo phòng ban "${cleanName}" thành công!`);
-                  setNewDeptName('');
-                }}
-                className="mt-4 space-y-3 text-xs"
-              >
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700">Tên Phòng ban mới</label>
-                  <input
-                    type="text"
-                    required
-                    value={newDeptName}
-                    onChange={(e) => setNewDeptName(e.target.value)}
-                    placeholder="Ví dụ: Cyber Security & Cloud"
-                    className="mt-1 w-full rounded-2xl border border-slate-200/90 bg-white px-3.5 py-2 text-xs shadow-2xs transition-all focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400/20"
-                  />
-                </div>
-                <div>
-                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                    Chỉ định Trưởng bộ phận (Hiring Manager)
-                  </label>
-                  <ModernSelect<string>
-                    value={newDeptManager}
-                    onChange={(val) => setNewDeptManager(val)}
-                    options={store.users
-                      .filter(
-                        (u) =>
-                          u.role === 'HIRING_MANAGER' ||
-                          u.role === 'ADMIN' ||
-                          u.role === 'INTERVIEWER',
-                      )
-                      .map((u) => ({
-                        value: u.fullName,
-                        label: `${u.fullName} (${u.role})`,
-                        badge: u.role,
-                        badgeColor:
-                          u.role === 'HIRING_MANAGER'
-                            ? 'bg-emerald-100 text-emerald-900'
-                            : u.role === 'ADMIN'
-                              ? 'bg-amber-100 text-amber-900'
-                              : 'bg-violet-100 text-violet-900',
-                      }))}
-                    className="w-full"
-                    triggerClassName="w-full rounded-2xl py-2"
-                  />
-                </div>
-                <div className="pt-2">
-                  <button
-                    type="submit"
-                    className="flex w-full cursor-pointer items-center justify-center gap-2 rounded-2xl bg-amber-500 py-2.5 text-xs font-extrabold text-slate-950 shadow-md shadow-amber-500/20 transition-all hover:bg-amber-400 hover:shadow-lg active:scale-95"
-                  >
-                    <Plus className="h-4 w-4" />
-                    Thêm Phòng Ban Vào Tổ Chức
-                  </button>
-                </div>
-              </form>
             </div>
 
-            <div className="rounded-2xl border border-amber-200 bg-amber-50/60 p-4 text-xs text-amber-950">
-              <p className="font-bold">💡 Quy tắc Toàn vẹn Phòng ban (Referential Integrity):</p>
-              <ul className="mt-1.5 list-disc space-y-1 pl-4 text-[11px] text-amber-900">
-                <li>
-                  Khi đổi tên Phòng ban, toàn bộ Tài khoản nhân sự, Requisitions và Jobs thuộc phòng
-                  ban đó được đồng bộ tự động.
-                </li>
-                <li>
-                  Hệ thống chặn xóa Phòng ban nếu đang có Chiến dịch tuyển dụng (Job/Requisition)
-                  hoặc Nhân sự trực thuộc.
-                </li>
-              </ul>
-            </div>
+            <button
+              type="button"
+              onClick={() => {
+                setNewDeptName('');
+                setIsCreateDeptOpen(true);
+              }}
+              className="inline-flex cursor-pointer items-center gap-2 rounded-2xl bg-amber-500 px-4 py-2 text-xs font-extrabold text-slate-950 shadow-md shadow-amber-500/20 hover:bg-amber-400 hover:shadow-lg transition-all active:scale-95"
+            >
+              <Plus className="h-4 w-4" />
+              Thêm Phòng Ban Mới
+            </button>
           </div>
 
-          {/* Right: Department Cards with Real-time Headcount & Member Roster */}
-          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:col-span-8">
+          {/* Department Cards Grid (Responsive 3 Columns) */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {enrichedDepartments.map((d) => {
-              const isEditing = editingDeptId === d.id;
               return (
                 <div
                   key={d.id}
@@ -1988,7 +1680,7 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                         <button
                           type="button"
                           onClick={() => {
-                            setEditingDeptId(isEditing ? null : d.id);
+                            setEditingDept(d);
                             setEditDeptName(d.name);
                             setEditDeptManager(d.managerName);
                           }}
@@ -2039,90 +1731,6 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                         </button>
                       </div>
                     </div>
-
-                    {/* Inline Edit Department Form */}
-                    {isEditing && (
-                      <div className="mt-3 space-y-2 rounded-xl border border-amber-200 bg-amber-50/50 p-3 text-xs">
-                        <div>
-                          <label className="block text-[11px] font-bold text-slate-700">
-                            Đổi tên Phòng ban
-                          </label>
-                          <input
-                            type="text"
-                            value={editDeptName}
-                            onChange={(e) => setEditDeptName(e.target.value)}
-                            className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-2.5 py-1.5"
-                          />
-                        </div>
-                        <div>
-                          <label className="block text-[11px] font-bold text-slate-700 mb-1">
-                            Đổi Trưởng bộ phận (Hiring Manager)
-                          </label>
-                          <ModernSelect<string>
-                            value={editDeptManager}
-                            onChange={(val) => setEditDeptManager(val)}
-                            options={store.users
-                              .filter((u) => u.role !== 'CANDIDATE')
-                              .map((u) => ({
-                                value: u.fullName,
-                                label: `${u.fullName} (${u.role})`,
-                                badge: u.role,
-                                badgeColor:
-                                  u.role === 'HIRING_MANAGER'
-                                    ? 'bg-emerald-100 text-emerald-900'
-                                    : u.role === 'ADMIN'
-                                      ? 'bg-amber-100 text-amber-900'
-                                      : 'bg-violet-100 text-violet-900',
-                              }))}
-                            className="w-full"
-                            triggerClassName="w-full rounded-xl py-1.5"
-                          />
-                        </div>
-                        <div className="flex justify-end gap-2 pt-1">
-                          <button
-                            type="button"
-                            onClick={() => setEditingDeptId(null)}
-                            className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 font-semibold text-slate-600"
-                          >
-                            Hủy
-                          </button>
-                          <button
-                            type="button"
-                            onClick={() => {
-                              const nextName = editDeptName.trim();
-                              if (!nextName) return;
-                              const oldName = d.name;
-                              setStore((prev) => ({
-                                ...prev,
-                                departments: prev.departments.map((item) =>
-                                  item.id === d.id
-                                    ? { ...item, name: nextName, managerName: editDeptManager }
-                                    : item,
-                                ),
-                                users: prev.users.map((u) =>
-                                  u.department === oldName ? { ...u, department: nextName } : u,
-                                ),
-                                requisitions: prev.requisitions.map((r) =>
-                                  r.department === oldName ? { ...r, department: nextName } : r,
-                                ),
-                                jobs: prev.jobs.map((j) =>
-                                  j.department === oldName ? { ...j, department: nextName } : j,
-                                ),
-                              }));
-                              appendAudit(
-                                'UPDATE_DEPARTMENT',
-                                `Cập nhật phòng ban "${oldName}" → "${nextName}" (Manager: ${editDeptManager})`,
-                              );
-                              notifyBanner(`Đã cập nhật phòng ban "${nextName}"!`);
-                              setEditingDeptId(null);
-                            }}
-                            className="cursor-pointer rounded-lg bg-amber-600 px-3 py-1 font-bold text-white hover:bg-amber-700"
-                          >
-                            Lưu
-                          </button>
-                        </div>
-                      </div>
-                    )}
 
                     {/* Department KPI Strip */}
                     <div className="mt-4 grid grid-cols-3 gap-2 rounded-xl bg-slate-50 p-2.5 text-center text-xs">
@@ -3451,6 +3059,684 @@ export const AdminPortalView: React.FC<AdminPortalViewProps> = ({
                 className="cursor-pointer rounded-xl bg-amber-600 px-4 py-2 font-bold text-white hover:bg-amber-700"
               >
                 Xác Nhận Dọn Dẹp
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================================
+          MODAL: CREATE USER & IAM PROVISIONING
+         ===================================================================== */}
+      {isCreateUserOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
+          <div className="relative w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-900 px-6 py-4 text-white">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/20 text-amber-400">
+                  <UserPlus className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">
+                    Cấp Mới Tài Khoản & Gán Quyền Truy Cập (IAM Provisioning)
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Khởi tạo tài khoản nhân sự mới theo chuẩn Strict 5-Role RBAC (S1.2, S1.3)
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCreateUserOpen(false)}
+                className="cursor-pointer rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const normEmail = normalizeEmailInput(newUserEmail);
+                const normPhone = normalizePhoneInput(newUserPhone) || '0909888777';
+                if (!newUserName.trim() || !normEmail || newUserPassword.length < 6) return;
+                if (store.users.some((u) => normalizeEmailInput(u.email) === normEmail)) {
+                  onTriggerViolation({
+                    code: 'USER_EMAIL_TAKEN',
+                    message: `Email "${normEmail}" đã tồn tại trong hệ thống (HTTP 409 — S1.2).`,
+                    candidateName: newUserName.trim(),
+                    fromStageName: 'Admin IAM Create',
+                    toStageName: newUserRole,
+                  });
+                  return;
+                }
+                const created: AccountUser = {
+                  id: Date.now(),
+                  fullName: newUserName.trim(),
+                  email: normEmail,
+                  phone: normPhone,
+                  password: newUserPassword,
+                  role: newUserRole,
+                  department: newUserRole === 'CANDIDATE' ? 'Ứng viên bên ngoài' : newUserDept,
+                  status: 'ACTIVE',
+                };
+                setStore((prev) => ({
+                  ...prev,
+                  users: [...prev.users, created],
+                }));
+                appendAudit(
+                  'ADMIN_CREATE_USER',
+                  `Tạo tài khoản ${created.email} (Role: ${created.role}, Phòng ban: ${created.department})`,
+                );
+                notifyBanner(
+                  `Đã tạo tài khoản "${created.fullName}" (${created.email}) với Role ${created.role}!`,
+                );
+                setNewUserName('');
+                setNewUserEmail('');
+                setNewUserPhone('');
+                setNewUserPassword('Password@123');
+                setIsCreateUserOpen(false);
+              }}
+              className="space-y-4 p-6 text-xs"
+            >
+              <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700">
+                    Họ và tên nhân sự <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newUserName}
+                    onChange={(e) => setNewUserName(e.target.value)}
+                    placeholder="Ví dụ: Nguyễn Văn A"
+                    className="mt-1 w-full rounded-2xl border border-slate-200/90 bg-white px-3.5 py-2 text-xs text-slate-900 shadow-2xs transition-all focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400/20"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700">
+                    Email đăng nhập <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={newUserEmail}
+                    onChange={(e) => setNewUserEmail(e.target.value)}
+                    placeholder="user@ats.local"
+                    className="mt-1 w-full rounded-2xl border border-slate-200/90 bg-white px-3.5 py-2 font-mono text-xs text-slate-900 shadow-2xs transition-all focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400/20"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700">
+                    Số điện thoại liên hệ
+                  </label>
+                  <input
+                    type="text"
+                    value={newUserPhone}
+                    onChange={(e) => setNewUserPhone(e.target.value)}
+                    placeholder="0909888777"
+                    className="mt-1 w-full rounded-2xl border border-slate-200/90 bg-white px-3.5 py-2 font-mono text-xs text-slate-900 shadow-2xs transition-all focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400/20"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-3.5 sm:grid-cols-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Vai trò được cấp (RBAC Role) <span className="text-red-500">*</span>
+                  </label>
+                  <ModernSelect<UserRole>
+                    value={newUserRole}
+                    onChange={(r) => setNewUserRole(r)}
+                    options={[
+                      { value: 'HR', label: 'HR (Chuyên viên Tuyển dụng)', badge: 'HR', badgeColor: 'bg-blue-100 text-blue-900' },
+                      { value: 'HIRING_MANAGER', label: 'HIRING_MANAGER (Trưởng bộ phận)', badge: 'HM', badgeColor: 'bg-emerald-100 text-emerald-900' },
+                      { value: 'INTERVIEWER', label: 'INTERVIEWER (Giám khảo)', badge: 'INT', badgeColor: 'bg-violet-100 text-violet-900' },
+                      { value: 'ADMIN', label: 'ADMIN (Quản trị viên)', badge: 'ADMIN', badgeColor: 'bg-amber-100 text-amber-900' },
+                      { value: 'CANDIDATE', label: 'CANDIDATE (Ứng viên)', badge: 'CAND', badgeColor: 'bg-sky-100 text-sky-900' },
+                    ]}
+                    className="w-full"
+                    triggerClassName="w-full rounded-2xl py-2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                    Phòng ban trực thuộc
+                  </label>
+                  <ModernSelect<string>
+                    value={newUserDept}
+                    disabled={newUserRole === 'CANDIDATE'}
+                    onChange={(dept) => setNewUserDept(dept)}
+                    options={[
+                      { value: 'Executive & IT Governance', label: 'Executive & IT Governance' },
+                      { value: 'People & Talent', label: 'People & Talent' },
+                      ...store.departments.map((d) => ({
+                        value: d.name,
+                        label: d.name,
+                      })),
+                    ]}
+                    className="w-full"
+                    triggerClassName="w-full rounded-2xl py-2"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700">
+                    Mật khẩu khởi tạo (≥ 6 ký tự)
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={newUserPassword}
+                    onChange={(e) => setNewUserPassword(e.target.value)}
+                    placeholder="Mật khẩu (≥ 6 ký tự)"
+                    className="mt-1 w-full rounded-2xl border border-slate-200/90 bg-white px-3.5 py-2 font-mono text-xs text-slate-900 shadow-2xs transition-all focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400/20"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between border-t border-slate-100 pt-4">
+                <span className="text-[11px] text-slate-400">
+                  Mật khẩu mặc định: <code className="font-bold text-slate-700">Password@123</code>
+                </span>
+                <div className="flex items-center gap-2.5">
+                  <button
+                    type="button"
+                    onClick={() => setIsCreateUserOpen(false)}
+                    className="cursor-pointer rounded-2xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-all active:scale-95"
+                  >
+                    Hủy thao tác
+                  </button>
+                  <button
+                    type="submit"
+                    className="cursor-pointer rounded-2xl bg-amber-500 px-5 py-2 text-xs font-extrabold text-slate-950 shadow-md shadow-amber-500/20 hover:bg-amber-400 hover:shadow-lg transition-all active:scale-95"
+                  >
+                    Cấp Mới & Kích Hoạt Tài Khoản
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================================
+          MODAL: RESET PASSWORD CONFIRMATION
+         ===================================================================== */}
+      {resetConfirmUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
+          <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
+            <div className="flex items-center gap-3 text-amber-600">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-amber-100 text-amber-600">
+                <RefreshCw className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Đặt Lại Mật Khẩu Tài Khoản</h3>
+                <p className="text-xs text-slate-500">Khôi phục mật khẩu mặc định an toàn</p>
+              </div>
+            </div>
+
+            <p className="mt-4 text-xs leading-relaxed text-slate-600">
+              Bạn có chắc chắn muốn đặt lại mật khẩu cho nhân sự{' '}
+              <strong className="text-slate-900">{resetConfirmUser.fullName}</strong> (
+              <code className="font-mono text-slate-700">{resetConfirmUser.email}</code>)?
+            </p>
+
+            <div className="mt-3 rounded-2xl border border-amber-200 bg-amber-50/70 p-3 text-xs text-amber-900">
+              <p className="font-semibold">Mật khẩu mới sau khi đặt lại:</p>
+              <code className="mt-1 block font-mono text-sm font-extrabold text-slate-900">
+                Password@123
+              </code>
+            </div>
+
+            <div className="mt-6 flex items-center justify-end gap-2 border-t border-slate-100 pt-4 text-xs">
+              <button
+                type="button"
+                onClick={() => setResetConfirmUser(null)}
+                className="cursor-pointer rounded-xl border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50 transition-all active:scale-95"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setStore((prev) => ({
+                    ...prev,
+                    users: prev.users.map((item) =>
+                      item.id === resetConfirmUser.id
+                        ? { ...item, password: 'Password@123' }
+                        : item,
+                    ),
+                  }));
+                  appendAudit(
+                    'ADMIN_RESET_PASSWORD',
+                    `Admin đặt lại mật khẩu của ${resetConfirmUser.email} về Password@123`,
+                  );
+                  notifyBanner(
+                    `Đã đặt lại mật khẩu của ${resetConfirmUser.email} về mặc định "Password@123"!`,
+                  );
+                  setResetConfirmUser(null);
+                }}
+                className="cursor-pointer rounded-xl bg-amber-500 px-4 py-2 font-bold text-slate-950 shadow-md shadow-amber-500/20 hover:bg-amber-400 transition-all active:scale-95"
+              >
+                Xác Nhận Đặt Lại MK
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================================
+          MODAL: CHANGE USER STATUS CONFIRMATION
+         ===================================================================== */}
+      {statusConfirmUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
+          <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
+            <div className="flex items-center gap-3">
+              <div
+                className={cn(
+                  'flex h-11 w-11 items-center justify-center rounded-2xl',
+                  statusConfirmUser.nextStatus === 'INACTIVE'
+                    ? 'bg-amber-100 text-amber-600'
+                    : 'bg-emerald-100 text-emerald-600',
+                )}
+              >
+                {statusConfirmUser.nextStatus === 'INACTIVE' ? (
+                  <Lock className="h-6 w-6" />
+                ) : (
+                  <Unlock className="h-6 w-6" />
+                )}
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">
+                  {statusConfirmUser.nextStatus === 'INACTIVE'
+                    ? 'Khóa Quyền Truy Cập Tài Khoản'
+                    : 'Mở Khóa Tài Khoản Nhân Sự'}
+                </h3>
+                <p className="text-xs text-slate-500">Chính sách IAM & Phân quyền RBAC S1.3</p>
+              </div>
+            </div>
+
+            <p className="mt-4 text-xs leading-relaxed text-slate-600">
+              Bạn có chắc chắn muốn {statusConfirmUser.nextStatus === 'INACTIVE' ? 'khóa' : 'mở khóa'}{' '}
+              tài khoản của{' '}
+              <strong className="text-slate-900">{statusConfirmUser.user.fullName}</strong> (
+              <code className="font-mono text-slate-700">{statusConfirmUser.user.email}</code>)?
+              {statusConfirmUser.nextStatus === 'INACTIVE' && (
+                <span className="mt-2 block text-amber-700 font-medium">
+                  Tài khoản bị khóa sẽ bị chặn đăng nhập và từ chối cấp JWT token (mã lỗi USER_INACTIVE).
+                </span>
+              )}
+            </p>
+
+            <div className="mt-6 flex items-center justify-end gap-2 border-t border-slate-100 pt-4 text-xs">
+              <button
+                type="button"
+                onClick={() => setStatusConfirmUser(null)}
+                className="cursor-pointer rounded-xl border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50 transition-all active:scale-95"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const u = statusConfirmUser.user;
+                  const nextStatus = statusConfirmUser.nextStatus;
+                  setStore((prev) => ({
+                    ...prev,
+                    users: prev.users.map((item) =>
+                      item.id === u.id ? { ...item, status: nextStatus } : item,
+                    ),
+                  }));
+                  appendAudit(
+                    'USER_STATUS',
+                    `Cập nhật trạng thái ${u.email} → ${nextStatus}`,
+                  );
+                  notifyBanner(
+                    nextStatus === 'INACTIVE'
+                      ? `Đã khóa tài khoản ${u.email} (Chặn đăng nhập S1.3 USER_INACTIVE).`
+                      : `Đã mở khóa tài khoản ${u.email}.`,
+                  );
+                  setStatusConfirmUser(null);
+                }}
+                className={cn(
+                  'cursor-pointer rounded-xl px-4 py-2 font-bold transition-all active:scale-95',
+                  statusConfirmUser.nextStatus === 'INACTIVE'
+                    ? 'bg-amber-600 text-white hover:bg-amber-700'
+                    : 'bg-emerald-600 text-white hover:bg-emerald-700',
+                )}
+              >
+                {statusConfirmUser.nextStatus === 'INACTIVE' ? 'Xác Nhận Khóa' : 'Xác Nhận Mở Khóa'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================================
+          MODAL: CREATE DEPARTMENT
+         ===================================================================== */}
+      {isCreateDeptOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
+          <div className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-900 px-6 py-4 text-white">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/20 text-amber-400">
+                  <Building2 className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">
+                    Thêm Phòng Ban Mới (Tổ chức doanh nghiệp)
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Khởi tạo phòng ban và chỉ định Trưởng bộ phận phụ trách
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCreateDeptOpen(false)}
+                className="cursor-pointer rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const cleanName = newDeptName.trim();
+                if (!cleanName) return;
+                if (
+                  store.departments.some(
+                    (d) => d.name.toLowerCase() === cleanName.toLowerCase(),
+                  )
+                ) {
+                  onTriggerViolation({
+                    code: 'DUPLICATE_DEPT_NAME',
+                    message: `Phòng ban "${cleanName}" đã tồn tại trong tổ chức.`,
+                    candidateName: cleanName,
+                    fromStageName: 'Create Department',
+                    toStageName: 'Department List',
+                  });
+                  return;
+                }
+                setStore((prev) => ({
+                  ...prev,
+                  departments: [
+                    ...prev.departments,
+                    {
+                      id: Date.now(),
+                      name: cleanName,
+                      managerName: newDeptManager,
+                      memberCount: 1,
+                      openRequisitions: 0,
+                    },
+                  ],
+                }));
+                appendAudit(
+                  'CREATE_DEPARTMENT',
+                  `Tạo phòng ban "${cleanName}" (Hiring Manager: ${newDeptManager})`,
+                );
+                notifyBanner(`Đã tạo phòng ban "${cleanName}" thành công!`);
+                setNewDeptName('');
+                setIsCreateDeptOpen(false);
+              }}
+              className="space-y-4 p-6 text-xs"
+            >
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700">
+                  Tên Phòng ban mới <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newDeptName}
+                  onChange={(e) => setNewDeptName(e.target.value)}
+                  placeholder="Ví dụ: Cyber Security & Cloud"
+                  className="mt-1 w-full rounded-2xl border border-slate-200/90 bg-white px-3.5 py-2 text-xs shadow-2xs transition-all focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400/20"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Chỉ định Trưởng bộ phận (Hiring Manager) <span className="text-red-500">*</span>
+                </label>
+                <ModernSelect<string>
+                  value={newDeptManager}
+                  onChange={(val) => setNewDeptManager(val)}
+                  options={store.users
+                    .filter(
+                      (u) =>
+                        u.role === 'HIRING_MANAGER' ||
+                        u.role === 'ADMIN' ||
+                        u.role === 'INTERVIEWER',
+                    )
+                    .map((u) => ({
+                      value: u.fullName,
+                      label: `${u.fullName} (${u.role})`,
+                      badge: u.role,
+                      badgeColor:
+                        u.role === 'HIRING_MANAGER'
+                          ? 'bg-emerald-100 text-emerald-900'
+                          : u.role === 'ADMIN'
+                            ? 'bg-amber-100 text-amber-900'
+                            : 'bg-violet-100 text-violet-900',
+                    }))}
+                  className="w-full"
+                  triggerClassName="w-full rounded-2xl py-2"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 border-t border-slate-100 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateDeptOpen(false)}
+                  className="cursor-pointer rounded-2xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-all active:scale-95"
+                >
+                  Hủy thao tác
+                </button>
+                <button
+                  type="submit"
+                  className="cursor-pointer rounded-2xl bg-amber-500 px-5 py-2 text-xs font-extrabold text-slate-950 shadow-md shadow-amber-500/20 hover:bg-amber-400 hover:shadow-lg transition-all active:scale-95"
+                >
+                  Thêm Phòng Ban Vào Tổ Chức
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================================
+          MODAL: EDIT DEPARTMENT
+         ===================================================================== */}
+      {editingDept && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
+          <div className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-900 px-6 py-4 text-white">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-amber-500/20 text-amber-400">
+                  <Building2 className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">
+                    Chỉnh Sửa Thông Tin Phòng Ban
+                  </h3>
+                  <p className="text-xs text-slate-400">{editingDept.name}</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setEditingDept(null)}
+                className="cursor-pointer rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                const nextName = editDeptName.trim();
+                if (!nextName) return;
+                const oldName = editingDept.name;
+                setStore((prev) => ({
+                  ...prev,
+                  departments: prev.departments.map((item) =>
+                    item.id === editingDept.id
+                      ? { ...item, name: nextName, managerName: editDeptManager }
+                      : item,
+                  ),
+                  users: prev.users.map((u) =>
+                    u.department === oldName ? { ...u, department: nextName } : u,
+                  ),
+                  requisitions: prev.requisitions.map((r) =>
+                    r.department === oldName ? { ...r, department: nextName } : r,
+                  ),
+                  jobs: prev.jobs.map((j) =>
+                    j.department === oldName ? { ...j, department: nextName } : j,
+                  ),
+                }));
+                appendAudit(
+                  'UPDATE_DEPARTMENT',
+                  `Cập nhật phòng ban "${oldName}" → "${nextName}" (Manager: ${editDeptManager})`,
+                );
+                notifyBanner(`Đã cập nhật phòng ban "${nextName}"!`);
+                setEditingDept(null);
+              }}
+              className="space-y-4 p-6 text-xs"
+            >
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700">
+                  Đổi tên Phòng ban <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editDeptName}
+                  onChange={(e) => setEditDeptName(e.target.value)}
+                  className="mt-1 w-full rounded-2xl border border-slate-200/90 bg-white px-3.5 py-2 text-xs shadow-2xs transition-all focus:border-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400/20"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700 mb-1">
+                  Đổi Trưởng bộ phận (Hiring Manager) <span className="text-red-500">*</span>
+                </label>
+                <ModernSelect<string>
+                  value={editDeptManager}
+                  onChange={(val) => setEditDeptManager(val)}
+                  options={store.users
+                    .filter((u) => u.role !== 'CANDIDATE')
+                    .map((u) => ({
+                      value: u.fullName,
+                      label: `${u.fullName} (${u.role})`,
+                      badge: u.role,
+                      badgeColor:
+                        u.role === 'HIRING_MANAGER'
+                          ? 'bg-emerald-100 text-emerald-900'
+                          : u.role === 'ADMIN'
+                            ? 'bg-amber-100 text-amber-900'
+                            : 'bg-violet-100 text-violet-900',
+                    }))}
+                  className="w-full"
+                  triggerClassName="w-full rounded-2xl py-2"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 border-t border-slate-100 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setEditingDept(null)}
+                  className="cursor-pointer rounded-2xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-all active:scale-95"
+                >
+                  Hủy
+                </button>
+                <button
+                  type="submit"
+                  className="cursor-pointer rounded-2xl bg-amber-500 px-5 py-2 text-xs font-extrabold text-slate-950 shadow-md shadow-amber-500/20 hover:bg-amber-400 hover:shadow-lg transition-all active:scale-95"
+                >
+                  Lưu Thay Đổi Phòng Ban
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* =====================================================================
+          MODAL: EXECUTIVE OFFER APPROVAL
+         ===================================================================== */}
+      {offerApprovalCand && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
+          <div className="relative w-full max-w-md overflow-hidden rounded-3xl border border-slate-200 bg-white p-6 shadow-2xl">
+            <div className="flex items-center gap-3 text-emerald-600">
+              <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600">
+                <Sparkles className="h-6 w-6" />
+              </div>
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Phê Duyệt Đề Nghị Tuyển Dụng Đặc Cách</h3>
+                <p className="text-xs text-slate-500">Admin Executive Override (S1.6)</p>
+              </div>
+            </div>
+
+            <div className="mt-4 space-y-2 rounded-2xl border border-slate-200 bg-slate-50/70 p-4 text-xs">
+              <div className="flex justify-between">
+                <span className="text-slate-500">Ứng viên:</span>
+                <strong className="text-slate-900">{offerApprovalCand.fullName}</strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Vị trí:</span>
+                <strong className="text-slate-900">{offerApprovalCand.jobTitle}</strong>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Phòng ban:</span>
+                <span className="font-semibold text-slate-800">{offerApprovalCand.dept}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-500">Mức lương đề xuất:</span>
+                <span className="font-mono font-bold text-amber-900">{offerApprovalCand.salary}</span>
+              </div>
+            </div>
+
+            <p className="mt-3 text-[11px] leading-relaxed text-slate-500">
+              Hành động này sẽ phê duyệt chính thức đề nghị Offer cho ứng viên dưới danh nghĩa Quản trị viên cấp cao (ADMIN EXECUTIVE), chuyển hồ sơ sang trạng thái sẵn sàng ký hợp đồng.
+            </p>
+
+            <div className="mt-6 flex items-center justify-end gap-2 border-t border-slate-100 pt-4 text-xs">
+              <button
+                type="button"
+                onClick={() => setOfferApprovalCand(null)}
+                className="cursor-pointer rounded-xl border border-slate-200 px-4 py-2 font-semibold text-slate-700 hover:bg-slate-50 transition-all active:scale-95"
+              >
+                Hủy bỏ
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  const targetId = offerApprovalCand.id;
+                  setStore((prev) => ({
+                    ...prev,
+                    candidates: prev.candidates.map((c) =>
+                      c.id === targetId
+                        ? {
+                            ...c,
+                            offerApprovedByHm: true,
+                            offerApprovedByName: `${currentUser.fullName} (ADMIN EXECUTIVE)`,
+                          }
+                        : c,
+                    ),
+                  }));
+                  appendAudit(
+                    'ADMIN_EXEC_APPROVE_OFFER',
+                    `Admin phê duyệt đặc cách Offer cho ứng viên ${offerApprovalCand.fullName} (${offerApprovalCand.jobTitle})`,
+                  );
+                  notifyBanner(`Đã phê duyệt đặc cách Offer cho ${offerApprovalCand.fullName}!`);
+                  setOfferApprovalCand(null);
+                }}
+                className="cursor-pointer rounded-xl bg-emerald-600 px-4 py-2 font-bold text-white shadow-md shadow-emerald-500/20 hover:bg-emerald-700 transition-all active:scale-95"
+              >
+                Xác Nhận Phê Duyệt
               </button>
             </div>
           </div>

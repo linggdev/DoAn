@@ -6,6 +6,7 @@ import {
   Rocket,
   Sliders,
   Trash2,
+  X,
 } from 'lucide-react';
 import React, { useState } from 'react';
 import { ModernSelect } from '@/components/animate-ui/modern-select';
@@ -54,6 +55,7 @@ export const JobSetupView: React.FC<JobSetupViewProps> = ({
   const [newReqTitle, setNewReqTitle] = useState('');
   const [newReqHeadcount, setNewReqHeadcount] = useState(2);
   const [newReqSalary, setNewReqSalary] = useState('35.000.000 - 48.000.000 VNĐ');
+  const [isCreateReqOpen, setIsCreateReqOpen] = useState(false);
 
   const [draftCriteria, setDraftCriteria] = useState<CriterionDef[]>(selectedJob.criteria);
   const [draftStages, setDraftStages] = useState<StageDef[]>(selectedJob.stages);
@@ -70,68 +72,31 @@ export const JobSetupView: React.FC<JobSetupViewProps> = ({
     <div className="grid grid-cols-1 gap-5 lg:grid-cols-12">
       {/* LEFT: REQUISITIONS & CREATE JOB */}
       <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-xs lg:col-span-5">
-        <div>
-          <h2 className="text-base font-extrabold text-slate-900">
-            1. Yêu Cầu Định Biên Tuyển Dụng (Job Requisitions — S2.1–S2.5)
-          </h2>
-          <p className="text-xs text-slate-500">
-            Hiring Manager xin định biên (`headcount`), HR duyệt (`APPROVED`) và khởi tạo chiến dịch
-            Job (liên kết 1–1 theo D14).
-          </p>
-        </div>
-
-        {(currentUser.role === 'HIRING_MANAGER' || currentUser.role === 'ADMIN') && (
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              onCreateRequisition(newReqTitle, newReqHeadcount, newReqSalary);
-              setNewReqTitle('');
-            }}
-            className="space-y-3 rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 text-xs"
-          >
-            <p className="font-bold text-emerald-950">
-              + Tạo Yêu Cầu Định Biên Mới (Phòng {currentUser.department})
+        <div className="flex items-start justify-between gap-2 border-b border-slate-100 pb-3">
+          <div>
+            <h2 className="text-base font-extrabold text-slate-900">
+              1. Yêu Cầu Định Biên Tuyển Dụng (Job Requisitions — S2.1–S2.5)
+            </h2>
+            <p className="text-xs text-slate-500">
+              Hiring Manager xin định biên (`headcount`), HR duyệt (`APPROVED`) và khởi tạo chiến dịch
+              Job (liên kết 1–1 theo D14).
             </p>
-            <input
-              type="text"
-              required
-              value={newReqTitle}
-              onChange={(e) => setNewReqTitle(e.target.value)}
-              placeholder="Chức danh cần tuyển (VD: Senior Data Engineer)..."
-              className="w-full rounded-xl border border-slate-200 bg-white px-3 py-2"
-            />
-            <div className="grid grid-cols-2 gap-2.5">
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-600">
-                  Số lượng cần tuyển (Headcount)
-                </label>
-                <input
-                  type="number"
-                  value={newReqHeadcount}
-                  onChange={(e) => setNewReqHeadcount(Number(e.target.value))}
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2 font-mono font-bold"
-                />
-              </div>
-              <div>
-                <label className="block text-[11px] font-semibold text-slate-600">
-                  Khung lương dự kiến
-                </label>
-                <input
-                  type="text"
-                  value={newReqSalary}
-                  onChange={(e) => setNewReqSalary(e.target.value)}
-                  className="mt-1 w-full rounded-xl border border-slate-200 bg-white px-3 py-2"
-                />
-              </div>
-            </div>
+          </div>
+
+          {(currentUser.role === 'HIRING_MANAGER' || currentUser.role === 'ADMIN') && (
             <button
-              type="submit"
-              className="w-full cursor-pointer rounded-xl bg-emerald-600 py-2.5 font-bold text-white shadow-sm hover:bg-emerald-700"
+              type="button"
+              onClick={() => {
+                setNewReqTitle('');
+                setIsCreateReqOpen(true);
+              }}
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-xl bg-emerald-600 px-3 py-1.5 text-xs font-bold text-white shadow-xs hover:bg-emerald-700 transition-all active:scale-95 shrink-0"
             >
-              Gửi Phiếu Xin Định Biên (S2.1)
+              <Plus className="h-3.5 w-3.5" />
+              Tạo Định Biên
             </button>
-          </form>
-        )}
+          )}
+        </div>
 
         <div className="space-y-3">
           {requisitions.map((r) => {
@@ -532,6 +497,107 @@ export const JobSetupView: React.FC<JobSetupViewProps> = ({
           )}
         </div>
       </div>
+
+      {/* =====================================================================
+          MODAL: CREATE JOB REQUISITION
+         ===================================================================== */}
+      {isCreateReqOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
+          <div className="relative w-full max-w-lg overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl">
+            <div className="flex items-center justify-between border-b border-slate-100 bg-slate-900 px-6 py-4 text-white">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-500/20 text-emerald-400">
+                  <Plus className="h-5 w-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-white">
+                    Tạo Yêu Cầu Định Biên Mới (Job Requisition — S2.1)
+                  </h3>
+                  <p className="text-xs text-slate-400">
+                    Phòng ban: {currentUser.department}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsCreateReqOpen(false)}
+                className="cursor-pointer rounded-lg p-1.5 text-slate-400 hover:bg-slate-800 hover:text-white transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!newReqTitle.trim()) return;
+                onCreateRequisition(newReqTitle.trim(), newReqHeadcount, newReqSalary);
+                setNewReqTitle('');
+                setIsCreateReqOpen(false);
+              }}
+              className="space-y-4 p-6 text-xs"
+            >
+              <div>
+                <label className="block text-[11px] font-bold text-slate-700">
+                  Chức danh cần tuyển (Job Title) <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newReqTitle}
+                  onChange={(e) => setNewReqTitle(e.target.value)}
+                  placeholder="Ví dụ: Senior Data Engineer..."
+                  className="mt-1 w-full rounded-2xl border border-slate-200/90 bg-white px-3.5 py-2 text-xs shadow-2xs transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3.5">
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700">
+                    Số lượng cần tuyển (Headcount) <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    required
+                    value={newReqHeadcount}
+                    onChange={(e) => setNewReqHeadcount(Number(e.target.value))}
+                    className="mt-1 w-full rounded-2xl border border-slate-200/90 bg-white px-3.5 py-2 font-mono text-xs font-bold shadow-2xs transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[11px] font-bold text-slate-700">
+                    Khung lương dự kiến
+                  </label>
+                  <input
+                    type="text"
+                    value={newReqSalary}
+                    onChange={(e) => setNewReqSalary(e.target.value)}
+                    placeholder="VD: 35.000.000 - 48.000.000 VNĐ"
+                    className="mt-1 w-full rounded-2xl border border-slate-200/90 bg-white px-3.5 py-2 text-xs shadow-2xs transition-all focus:border-emerald-500 focus:outline-none focus:ring-2 focus:ring-emerald-500/20"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 border-t border-slate-100 pt-4">
+                <button
+                  type="button"
+                  onClick={() => setIsCreateReqOpen(false)}
+                  className="cursor-pointer rounded-2xl border border-slate-200 bg-white px-4 py-2 text-xs font-semibold text-slate-700 shadow-2xs hover:bg-slate-50 transition-all active:scale-95"
+                >
+                  Hủy thao tác
+                </button>
+                <button
+                  type="submit"
+                  className="cursor-pointer rounded-2xl bg-emerald-600 px-5 py-2 text-xs font-extrabold text-white shadow-md shadow-emerald-600/20 hover:bg-emerald-700 hover:shadow-lg transition-all active:scale-95"
+                >
+                  Gửi Phiếu Xin Định Biên
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
