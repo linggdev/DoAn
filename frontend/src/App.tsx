@@ -50,6 +50,7 @@ import { CandidatePortalView } from '@/components/portals/candidate-portal';
 import { EvaluationStudioView } from '@/components/portals/evaluation-studio';
 import { HiringManagerPortalView } from '@/components/portals/hiring-manager-portal';
 import { HrPortalView } from '@/components/portals/hr-portal';
+import { InterviewerPortalView } from '@/components/portals/interviewer-portal';
 import { JobSetupView } from '@/components/portals/job-setup-view';
 import {
   AccountUser,
@@ -1761,241 +1762,22 @@ export function App() {
               )}
 
               {/* =================================================================
-                  PORTAL 4: INTERVIEWER ASSIGNED SCHEDULE (int-schedule)
+                  PORTAL 4: INTERVIEWER EVALUATION STUDIO & SCHEDULE HUB
                  ================================================================= */}
-              {currentUser.role === 'INTERVIEWER' && activeSection === 'int-schedule' && (
-                <div className="space-y-4">
-                  <div className="rounded-2xl border border-violet-200 bg-gradient-to-r from-violet-950 via-purple-900 to-slate-900 p-6 text-white shadow-lg">
-                    <span className="rounded-md bg-violet-500/20 px-2.5 py-1 font-mono text-[10px] font-bold text-violet-300 uppercase">
-                      INTERVIEWER EVALUATION STUDIO (S4.1–S4.8)
-                    </span>
-                    <h2 className="mt-2 text-xl font-extrabold">
-                      Lịch Phỏng Vấn Được Phân Công Cho {currentUser.fullName}
-                    </h2>
-                    <p className="mt-1 max-w-2xl text-xs text-violet-100/90">
-                      Mỗi giám khảo chấm điểm độc lập dưới cơ chế{' '}
-                      <strong>Blind Evaluation Lock</strong>: điểm của các giám khảo khác bị khóa
-                      cho đến khi 100% thành viên hội đồng hoàn tất nộp phiếu.
-                    </p>
-                  </div>
-
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
-                    {store.candidates
-                      .filter(
-                        (c) =>
-                          c.interviewScheduledAt &&
-                          c.sheets.some(
-                            (s) =>
-                              s.interviewerId === currentUser.id ||
-                              s.interviewerEmail.toLowerCase() === currentUser.email.toLowerCase(),
-                          ),
-                      )
-                      .map((cand) => {
-                        const candJob =
-                          store.jobs.find((j) => j.id === cand.jobId) ?? selectedJob;
-                        const mySheet =
-                          cand.sheets.find(
-                            (s) =>
-                              s.interviewerId === currentUser.id ||
-                              s.interviewerEmail.toLowerCase() === currentUser.email.toLowerCase(),
-                          ) ?? cand.sheets[0];
-                        const m = computeCandidateMetrics(cand, candJob.criteria);
-                        return (
-                          <div
-                            key={cand.id}
-                            className="flex flex-col justify-between rounded-2xl border border-slate-200 bg-white p-5 shadow-xs transition-all hover:shadow-md"
-                          >
-                            <div>
-                              <div className="flex items-center justify-between">
-                                <span
-                                  className={cn(
-                                    'rounded-full px-2.5 py-0.5 text-[10px] font-bold',
-                                    mySheet.submitted
-                                      ? 'bg-emerald-100 text-emerald-800'
-                                      : 'bg-amber-100 text-amber-800',
-                                  )}
-                                >
-                                  {mySheet.submitted
-                                    ? '✓ Bạn đã nộp phiếu'
-                                    : '⏳ Cần bạn chấm điểm'}
-                                </span>
-                                <span className="font-mono text-[11px] font-bold text-slate-500">
-                                  HĐ: {m.submittedCount}/{m.panelSize}
-                                </span>
-                              </div>
-
-                              <span className="mt-2 inline-block rounded bg-violet-50 px-2 py-0.5 font-mono text-[10px] font-bold text-violet-700">
-                                {candJob.title}
-                              </span>
-                              <h3 className="mt-1 text-base font-bold text-slate-900">
-                                {cand.fullName}
-                              </h3>
-                              <p className="mt-0.5 text-xs text-slate-500">{cand.experience}</p>
-
-                              <div className="mt-3 space-y-1 rounded-xl bg-slate-50 p-3 font-mono text-[11px] text-slate-600">
-                                <div className="flex items-center gap-1.5">
-                                  <Calendar className="h-3.5 w-3.5 text-violet-600" />
-                                  <span>
-                                    {cand.interviewScheduledAt} ({cand.interviewDurationMinutes}{' '}
-                                    phút)
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-1.5">
-                                  <Video className="h-3.5 w-3.5 text-blue-600" />
-                                  <span className="truncate">{cand.meetingLink}</span>
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="mt-4 flex gap-2">
-                              <button
-                                type="button"
-                                onClick={() => downloadIcsFile(cand, candJob.title)}
-                                className="cursor-pointer rounded-xl border border-slate-200 px-3 py-2 text-xs font-bold text-slate-700 hover:bg-slate-50"
-                              >
-                                <Download className="h-3.5 w-3.5" />
-                              </button>
-                              <button
-                                type="button"
-                                onClick={() => {
-                                  setSelectedJobId(cand.jobId);
-                                  setSelectedEvalCandidateId(cand.id);
-                                  setActiveSection('int-studio');
-                                }}
-                                className="flex flex-1 cursor-pointer items-center justify-center gap-2 rounded-xl bg-violet-600 py-2.5 text-xs font-bold text-white shadow-md shadow-violet-600/20 hover:bg-violet-700"
-                              >
-                                Mở Split-Screen Studio Chấm Điểm
-                                <ArrowRight className="h-3.5 w-3.5" />
-                              </button>
-                            </div>
-                          </div>
-                        );
-                      })}
-                  </div>
-                </div>
-              )}
-
-              {/* =================================================================
-                  SPLIT-SCREEN EVALUATION STUDIO (int-studio, hm-studio, hr-studio)
-                 ================================================================= */}
-              {currentUser.role !== 'HIRING_MANAGER' &&
-                currentUser.role !== 'HR' &&
-                (activeSection === 'int-studio' ||
-                  activeSection === 'hm-studio' ||
-                  activeSection === 'hr-studio') && (
-                <EvaluationStudioView
+              {currentUser.role === 'INTERVIEWER' && (
+                <InterviewerPortalView
+                  activeSection={activeSection}
+                  onSelectSection={setActiveSection}
                   currentUser={currentUser}
-                  jobTitle={selectedJob.title}
-                  passThreshold={selectedJob.passScoreThreshold}
-                  criteria={selectedJob.criteria}
-                  candidates={jobCandidates}
-                  selectedCandidateId={selectedEvalCandidateId}
-                  onSelectCandidate={setSelectedEvalCandidateId}
-                  onUpdateSheetScore={(candId, intId, critId, score) => {
-                    setStore((prev) => ({
-                      ...prev,
-                      candidates: prev.candidates.map((c) =>
-                        c.id !== candId
-                          ? c
-                          : {
-                              ...c,
-                              sheets: c.sheets.map((sh) =>
-                                sh.interviewerId === intId && !sh.submitted
-                                  ? { ...sh, scores: { ...sh.scores, [critId]: score } }
-                                  : sh,
-                              ),
-                            },
-                      ),
-                    }));
-                  }}
-                  onUpdateSheetCriterionComment={(candId, intId, critId, comment) => {
-                    setStore((prev) => ({
-                      ...prev,
-                      candidates: prev.candidates.map((c) =>
-                        c.id !== candId
-                          ? c
-                          : {
-                              ...c,
-                              sheets: c.sheets.map((sh) =>
-                                sh.interviewerId === intId && !sh.submitted
-                                  ? {
-                                      ...sh,
-                                      criterionComments: {
-                                        ...sh.criterionComments,
-                                        [critId]: comment,
-                                      },
-                                    }
-                                  : sh,
-                              ),
-                            },
-                      ),
-                    }));
-                  }}
-                  onUpdateSheetMeta={(candId, intId, recommendation, overallComment) => {
-                    setStore((prev) => ({
-                      ...prev,
-                      candidates: prev.candidates.map((c) =>
-                        c.id !== candId
-                          ? c
-                          : {
-                              ...c,
-                              sheets: c.sheets.map((sh) =>
-                                sh.interviewerId === intId && !sh.submitted
-                                  ? { ...sh, recommendation, comment: overallComment }
-                                  : sh,
-                              ),
-                            },
-                      ),
-                    }));
-                  }}
-                  onSubmitSheet={(candId, intId) => {
-                    const cand = store.candidates.find((c) => c.id === candId);
-                    const sh = cand?.sheets.find((s) => s.interviewerId === intId);
-                    if (!cand || !sh) return;
-                    if (sh.submitted) {
-                      setViolation({
-                        open: true,
-                        code: 'EVAL_ALREADY_SUBMITTED',
-                        message: `Phiếu chấm điểm của "${sh.interviewerName}" đã được nộp trước đó. Theo quy tắc D06 (S4.3), phiếu đã nộp là bất biến và không được phép chỉnh sửa!`,
-                        candidateName: cand.fullName,
-                        fromStageName: sh.interviewerName,
-                        toStageName: 'IMMUTABLE SCORECARD',
-                      });
-                      return;
-                    }
-                    const ts = nowFormatted();
-                    setStore((prev) => ({
-                      ...prev,
-                      candidates: prev.candidates.map((c) =>
-                        c.id !== candId
-                          ? c
-                          : {
-                              ...c,
-                              sheets: c.sheets.map((item) =>
-                                item.interviewerId === intId
-                                  ? { ...item, submitted: true, submittedAt: ts }
-                                  : item,
-                              ),
-                              logs: [
-                                ...c.logs,
-                                {
-                                  id: Date.now(),
-                                  fromStageCode: c.stageCode,
-                                  toStageCode: c.stageCode,
-                                  actorName: currentUser.fullName,
-                                  actorRole: currentUser.role,
-                                  note: `Giám khảo ${currentUser.fullName} đã nộp phiếu chấm điểm độc lập (${sh.recommendation})`,
-                                  createdAt: ts,
-                                },
-                              ],
-                            },
-                      ),
-                    }));
-                    appendAudit(
-                      'SUBMIT_SCORECARD',
-                      `${currentUser.fullName} nộp phiếu chấm bất biến cho ứng viên ${cand.fullName}`,
-                    );
-                  }}
+                  store={store}
+                  selectedJob={selectedJob}
+                  onSelectJobId={setSelectedJobId}
+                  selectedEvalCandidateId={selectedEvalCandidateId}
+                  onSelectEvalCandidateId={setSelectedEvalCandidateId}
+                  onUpdateSheetScore={handleUpdateSheetScore}
+                  onUpdateSheetCriterionComment={handleUpdateSheetCriterionComment}
+                  onUpdateSheetMeta={handleUpdateSheetMeta}
+                  onSubmitSheet={handleSubmitSheet}
                 />
               )}
 

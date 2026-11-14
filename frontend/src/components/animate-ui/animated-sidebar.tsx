@@ -110,6 +110,7 @@ export const ROLE_NAV_CONFIG: Record<UserRole, RoleNavItem[]> = {
   INTERVIEWER: [
     { id: 'int-schedule', label: 'Lịch Phỏng vấn Được giao', badge: 'Assigned', icon: CalendarCheck2 },
     { id: 'int-studio', label: 'Split-Screen Scorecard Studio', badge: 'Blind Lock', icon: ClipboardCheck },
+    { id: 'int-rubric', label: 'Barem & Lịch sử Phiếu chấm', badge: 'History', icon: Scale },
   ],
   CANDIDATE: [
     { id: 'cand-jobs', label: 'Khám phá Việc làm (Careers)', badge: 'Open', icon: Compass },
